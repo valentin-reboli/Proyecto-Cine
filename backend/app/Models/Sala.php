@@ -12,4 +12,9 @@ class Sala extends Model
     {
         return $this->hasMany(Asiento::class);
     }
+
+    public function funciones()
+    {
+        return $this->hasMany(Funcion::class);
+    }
 }
