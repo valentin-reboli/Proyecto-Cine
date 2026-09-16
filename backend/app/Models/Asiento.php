@@ -12,4 +12,9 @@ class Asiento extends Model
     {
         return $this->belongsTo(Sala::class);
     }
+
+    public function reservaAsientos()
+    {
+        return $this->hasMany(ReservaAsiento::class);
+    }
 }
