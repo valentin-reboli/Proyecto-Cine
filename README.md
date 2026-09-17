@@ -1,7 +1,7 @@
 Nombre del proyecto: Cine Concordia - Sistema web de venta de entradas online.
 
 Integrantes
-Leonardo Mover, Santiago Jacobo, Nazareno Rodriguez y Valentin Reboli.
+Leonardo Mover, Santiago Jacobo, Nazareno Rodriguez y Valentín Réboli
 
 Descripción del proyecto
 Cine Concordia será una plataforma web destinada a la gestión y venta de entradas online para un cine. El sistema permitirá a los usuarios consultar la cartelera, conocer la información de las películas, seleccionar una función, elegir el día y horario, y seleccionar sus butacas mediante un mapa interactivo que mostrará su disponibilidad en tiempo real.
