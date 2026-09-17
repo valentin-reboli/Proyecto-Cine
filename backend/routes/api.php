@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\PeliculaController;
+use App\Http\Controllers\Api\ReservaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,3 +19,10 @@ Route::get('/peliculas', [PeliculaController::class, 'index']);
 Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
+
+// Reservas: requieren usuario autenticado
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/reservas', [ReservaController::class, 'index']);
+    Route::post('/reservas', [ReservaController::class, 'store']);
+    Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
+});
