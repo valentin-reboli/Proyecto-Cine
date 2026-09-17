@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
             FormatoSeeder::class,
             SalaSeeder::class,
             AsientoSeeder::class,
+            PeliculaSeeder::class,
+            FuncionSeeder::class,
         ]);
     }
 }

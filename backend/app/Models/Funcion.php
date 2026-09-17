@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Funcion extends Model
 {
+    protected $table = 'funciones';
+
     protected $fillable = [
         'pelicula_id',
         'sala_id',
