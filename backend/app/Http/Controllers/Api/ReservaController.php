@@ -13,10 +13,14 @@ use Illuminate\Support\Facades\DB;
 
 class ReservaController extends Controller
 {
+    // El cliente compra sin loguearse: se identifica por su correo.
     public function index(Request $request)
     {
-        return $request->user()
-            ->reservas()
+        $data = $request->validate([
+            'correo' => ['required', 'email'],
+        ]);
+
+        return Reserva::where('invitado_correo', $data['correo'])
             ->with(['funcion.pelicula', 'reservaAsientos.asiento'])
             ->latest()
             ->get();
@@ -28,6 +32,9 @@ class ReservaController extends Controller
             'funcion_id' => ['required', 'integer', 'exists:funciones,id'],
             'asientos' => ['required', 'array', 'min:1'],
             'asientos.*' => ['integer', 'distinct', 'exists:asientos,id'],
+            'invitado_nombre' => ['required', 'string', 'max:255'],
+            'invitado_correo' => ['required', 'email', 'max:255'],
+            'invitado_telefono' => ['nullable', 'string', 'max:30'],
         ]);
 
         $funcion = Funcion::findOrFail($data['funcion_id']);
@@ -45,10 +52,12 @@ class ReservaController extends Controller
         }
 
         try {
-            $reserva = DB::transaction(function () use ($request, $funcion, $asientos) {
+            $reserva = DB::transaction(function () use ($data, $funcion, $asientos) {
                 $reserva = Reserva::create([
-                    'user_id' => $request->user()->id,
                     'funcion_id' => $funcion->id,
+                    'invitado_nombre' => $data['invitado_nombre'],
+                    'invitado_correo' => $data['invitado_correo'],
+                    'invitado_telefono' => $data['invitado_telefono'] ?? null,
                     'total' => $funcion->precio_base * $asientos->count(),
                     'estado' => 'pendiente',
                 ]);
@@ -84,7 +93,11 @@ class ReservaController extends Controller
 
     public function show(Request $request, Reserva $reserva)
     {
-        abort_unless($reserva->user_id === $request->user()->id, 403);
+        $data = $request->validate([
+            'correo' => ['required', 'email'],
+        ]);
+
+        abort_unless(strcasecmp($reserva->invitado_correo, $data['correo']) === 0, 403);
 
         return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos']);
     }

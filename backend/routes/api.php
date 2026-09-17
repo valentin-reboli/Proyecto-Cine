@@ -20,9 +20,7 @@ Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
 
-// Reservas: requieren usuario autenticado
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/reservas', [ReservaController::class, 'index']);
-    Route::post('/reservas', [ReservaController::class, 'store']);
-    Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
-});
+// Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
+Route::get('/reservas', [ReservaController::class, 'index']);
+Route::post('/reservas', [ReservaController::class, 'store']);
+Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
