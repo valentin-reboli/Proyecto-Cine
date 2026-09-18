@@ -1,0 +1,190 @@
+<header class="site-header">
+  <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+  <nav class="main-nav">
+    <a href="#cartelera">Cartelera</a>
+    <a href="#proximamente">Próximamente</a>
+    <a href="#promociones">Promociones</a>
+    <a href="#informacion">Información</a>
+  </nav>
+  <a href="#cartelera" class="btn btn-primary">Comprar entradas</a>
+</header>
+
+<section class="hero">
+  <div
+    class="hero-media"
+    style="
+      background-image: url('/img/spidermanbackdrop.jpg');
+      background-size: cover;
+      background-position: center;
+    "
+  ></div>
+  <div class="hero-scrim-v"></div>
+  <div class="hero-scrim-h"></div>
+  <div class="hero-content">
+    <div class="eyebrow">En cartelera ahora</div>
+    <h1 class="hero-title">{{ heroMovie.title }}</h1>
+    <div class="meta-row">
+      @for (genre of heroMovie.genres; track genre; let last = $last) {
+        <span>{{ genre }}</span>
+        @if (!last) {
+          <span class="dot">·</span>
+        }
+      }
+      <span class="dot">·</span><span>{{ heroMovie.duration }} min</span>
+      <span class="dot">·</span>
+      <span class="tag tag-outline">{{ heroMovie.rating }}</span>
+      @for (format of heroMovie.formats; track format) {
+        <span class="tag">{{ format }}</span>
+      }
+      @for (lang of langBadgesFor(heroMovie); track lang) {
+        <span class="tag">{{ lang }}</span>
+      }
+    </div>
+    <p class="hero-synopsis">
+      A medida que las exigencias a las que se ve sometido Spider-Man se
+      intensifican, la presión desencadena una sorprendente evolución física
+      que pone en peligro su existencia. Al mismo tiempo, una nueva y extraña
+      ola de delitos da lugar a una de las amenazas más poderosas a las que se
+      ha enfrentado jamás.
+    </p>
+    <div class="hero-actions">
+      <button class="btn btn-primary btn-lg" (click)="openHeroMovie()">
+        Comprar entradas
+      </button>
+      <a [href]="'#movie-' + heroMovie.id" class="btn-link">Ver en cartelera</a>
+    </div>
+  </div>
+</section>
+
+<section id="cartelera" class="section">
+  <div class="section-head">
+    <h2>Cartelera</h2>
+    <div class="filters">
+      <input
+        type="text"
+        placeholder="Buscar película..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchInput($event)"
+      />
+      <select [ngModel]="filterGenre()" (ngModelChange)="onGenreChange($event)">
+        @for (genre of genreOptions(); track genre) {
+          <option [value]="genre">{{ genre }}</option>
+        }
+      </select>
+      <select [ngModel]="filterFormat()" (ngModelChange)="onFormatChange($event)">
+        @for (format of formatOptions; track format) {
+          <option [value]="format">{{ format }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="movie-grid">
+    @for (movie of filteredMovies(); track movie.id) {
+      <div
+        class="movie-card"
+        [id]="'movie-' + movie.id"
+        (click)="openMovie(movie)"
+      >
+        <div
+          class="movie-poster"
+          [style.background-image]="'url(' + movie.poster + ')'"
+          style="background-size: cover; background-position: center"
+        ></div>
+        <div class="movie-body">
+          <h3 class="movie-title">{{ movie.title }}</h3>
+          <div class="movie-meta">
+            <span>{{ movie.genre }}</span
+            ><span class="dot">·</span><span>{{ movie.duration }} min</span
+            ><span class="dot">·</span><span>{{ movie.rating }}</span>
+          </div>
+          <div class="movie-langs">
+            @for (lang of langBadgesFor(movie); track lang) {
+              <span class="lang-badge">{{ lang }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+  @if (filteredMovies().length === 0) {
+    <p class="no-results">No encontramos películas con esos filtros.</p>
+  }
+</section>
+
+<section id="proximamente" class="section">
+  <h2>Próximamente</h2>
+  <div class="coming-soon-grid">
+    @for (movie of comingSoon; track movie.id) {
+      <div class="coming-soon-card">
+        <div
+          class="coming-soon-poster"
+          [style.background-image]="'url(' + movie.poster + ')'"
+          style="background-size: cover; background-position: center"
+        >
+          <span class="release-badge">{{ movie.releaseDate }}</span>
+        </div>
+        <div>
+          <h3>{{ movie.title }}</h3>
+          <div class="coming-soon-genre">{{ movie.genre }}</div>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<section id="promociones" class="section section-alt">
+  <h2>Promociones</h2>
+  <div class="promo-grid">
+    @for (promo of promotions; track promo.title) {
+      <div class="promo-card">
+        <div class="promo-tag">{{ promo.tag }}</div>
+        <h3>{{ promo.title }}</h3>
+        <p class="promo-desc">{{ promo.description }}</p>
+      </div>
+    }
+  </div>
+</section>
+
+<section id="informacion" class="section info-section">
+  <div class="info-text">
+    <h2>Información</h2>
+    <div class="info-list">
+      <div>
+        <span class="label">Ubicación</span>
+        <p>Pellegrini 550, Concordia, Entre Ríos</p>
+      </div>
+      <div>
+        <span class="label">Horario</span>
+        <p>Todos los días de 13:00 a 00:30 hs</p>
+      </div>
+      <div>
+        <span class="label">Contacto</span>
+        <p>(0345) 421-5566 · info&#64;cineconcordia.com.ar</p>
+      </div>
+      <div>
+        <span class="label">Instalaciones</span>
+        <p>3 salas · Sonido Dolby · Confitería</p>
+      </div>
+    </div>
+    <div class="social-links">
+      <a href="#">Instagram</a>
+      <a href="#">Facebook</a>
+    </div>
+  </div>
+  <iframe
+    class="info-map"
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3405.5528185626727!2d-58.01976552353789!3d-31.398891674269716!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95ade807c77aaaab%3A0xd8d82b7baa267a3a!2sCarlos%20Pellegrini%20550%2C%20E3200%20Concordia%2C%20Entre%20R%C3%ADos!5e0!3m2!1ses-419!2sar!4v1786807507072!5m2!1ses-419!2sar"
+    width="600"
+    height="450"
+    style="border: 0"
+    allowfullscreen
+    loading="lazy"
+    referrerpolicy="strict-origin-when-cross-origin"
+  ></iframe>
+</section>
+
+<footer class="site-footer">
+  <div class="logo logo-sm">CINE<span class="accent">CONCORDIA</span></div>
+  <p>© 2026 Cine Concordia. Todos los derechos reservados.</p>
+</footer>
