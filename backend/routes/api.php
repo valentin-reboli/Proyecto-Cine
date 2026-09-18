@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FuncionController;
+use App\Http\Controllers\Api\PagoController;
 use App\Http\Controllers\Api\PeliculaController;
 use App\Http\Controllers\Api\ReservaController;
 use Illuminate\Http\Request;
@@ -24,3 +25,4 @@ Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
 Route::get('/reservas', [ReservaController::class, 'index']);
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
+Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store']);
