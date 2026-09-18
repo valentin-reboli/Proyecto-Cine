@@ -1,7 +1,9 @@
-import { Component, computed, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CatalogService } from '../../core/services/catalog.service';
-import { Movie, Showtime } from '../../core/models/movie.model';
+import { BookingStateService } from '../../core/services/booking-state.service';
+import { Movie } from '../../core/models/movie.model';
 
 @Component({
   selector: 'app-home',
@@ -11,8 +13,8 @@ import { Movie, Showtime } from '../../core/models/movie.model';
 })
 export class HomeComponent {
   private readonly catalog = inject(CatalogService);
-
-  readonly selectMovie = output<{ movie: Movie; showtime: Showtime }>();
+  private readonly bookingState = inject(BookingStateService);
+  private readonly router = inject(Router);
 
   readonly heroMovie = this.catalog.movies[0];
 
@@ -61,7 +63,8 @@ export class HomeComponent {
   }
 
   openMovie(movie: Movie): void {
-    this.selectMovie.emit({ movie, showtime: movie.todayTimes[0] });
+    this.bookingState.select(movie, movie.todayTimes[0]);
+    this.router.navigateByUrl('/reserva');
   }
 
   openHeroMovie(): void {

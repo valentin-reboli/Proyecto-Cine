@@ -1,0 +1,35 @@
+@if (selection(); as sel) {
+  <div class="booking-shell">
+    <div class="booking-topbar">
+      <button class="btn-back" (click)="goBack()">‹ Volver</button>
+      <div class="progress-steps"></div>
+      <div class="topbar-spacer"></div>
+    </div>
+
+    <div class="booking-body">
+      <div class="booking-main">
+        <div class="booking-step">
+          <h2>Elegí tus butacas</h2>
+          <p class="step-sub">
+            {{ sel.movie.title }} · {{ sel.showtime.time }} hs · {{ sel.movie.sala }}
+          </p>
+        </div>
+      </div>
+
+      <aside class="booking-sidebar">
+        <div class="sidebar-movie">
+          <div
+            class="sidebar-poster"
+            [style.background-image]="'url(' + sel.movie.poster + ')'"
+            style="background-size: cover; background-position: center"
+          ></div>
+          <div>
+            <div class="sidebar-title">{{ sel.movie.title }}</div>
+            <div class="sidebar-sub">{{ sel.showtime.time }} hs</div>
+            <div class="sidebar-sub2">{{ sel.movie.sala }}</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+}
