@@ -1,35 +1,217 @@
 @if (selection(); as sel) {
   <div class="booking-shell">
     <div class="booking-topbar">
-      <button class="btn-back" (click)="goBack()">‹ Volver</button>
-      <div class="progress-steps"></div>
+      <button class="btn-back" (click)="handleBack()">‹ Volver</button>
+      <div class="progress-steps">
+        @for (s of progressSteps(); track s.key) {
+          <div class="progress-step">
+            <div class="progress-step-inner">
+              <div
+                class="progress-dot"
+                [style.background]="s.dotBg"
+                [style.color]="s.dotFg"
+                [style.border-color]="s.dotBorder"
+              >
+                {{ s.icon }}
+              </div>
+              <span class="progress-label" [style.color]="s.labelColor">{{ s.label }}</span>
+            </div>
+            @if (s.hasLine) {
+              <div class="progress-line"></div>
+            }
+          </div>
+        }
+      </div>
       <div class="topbar-spacer"></div>
     </div>
 
     <div class="booking-body">
       <div class="booking-main">
-        <div class="booking-step">
-          <h2>Elegí tus butacas</h2>
-          <p class="step-sub">
-            {{ sel.movie.title }} · {{ sel.showtime.time }} hs · {{ sel.movie.sala }}
-          </p>
-        </div>
+        @switch (step()) {
+          @case ('seats') {
+            <div class="booking-step">
+              <h2>Elegí tus butacas</h2>
+              <p class="step-sub">{{ sel.movie.title }} · {{ sel.movie.sala }}</p>
+              <div class="seat-legend">
+                <div><span class="swatch swatch-available"></span>Disponible</div>
+                <div><span class="swatch swatch-selected"></span>Seleccionada</div>
+                <div><span class="swatch swatch-occupied"></span>Ocupada</div>
+              </div>
+              <div class="seat-map-wrap">
+                <div class="seat-map-inner">
+                  <div class="screen-curve"></div>
+                  <div class="screen-label">PANTALLA</div>
+                  <div class="seat-rows">
+                    @for (row of seatRows(); track row.row) {
+                      <div class="seat-row">
+                        <span class="seat-row-label">{{ row.row }}</span>
+                        <div class="seat-row-seats">
+                          @for (seat of row.seats; track seat.id) {
+                            <button
+                              class="seat-btn"
+                              [class.selected]="seat.selected"
+                              [class.occupied]="seat.occupied"
+                              [disabled]="seat.occupied"
+                              (click)="toggleSeat(seat.id)"
+                            >
+                              {{ seat.num }}
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="seat-summary">
+                <span>{{ selectedSeats().length }} butaca(s) seleccionada(s)</span>
+                <span>{{ sortedSelectedSeats().join(', ') || '—' }}</span>
+              </div>
+            </div>
+          }
+          @case ('tickets') {
+            <div class="booking-step">
+              <h2>Tipo de entrada</h2>
+              <p class="step-sub">Asigná un tipo de entrada a cada butaca seleccionada.</p>
+              <div class="ticket-rows">
+                @for (id of sortedSelectedSeats(); track id) {
+                  <div class="ticket-row">
+                    <div class="ticket-seat-id">
+                      <span class="ticket-seat-badge">{{ id }}</span><span>Butaca</span>
+                    </div>
+                    <div class="ticket-options">
+                      <button
+                        class="ticket-type-btn"
+                        [class.active]="seatTypeOf(id) === 'general'"
+                        (click)="setSeatType(id, 'general')"
+                      >
+                        General · {{ formatPrice(priceGeneral) }}
+                      </button>
+                      <button
+                        class="ticket-type-btn"
+                        [class.active]="seatTypeOf(id) === 'reducida'"
+                        (click)="setSeatType(id, 'reducida')"
+                      >
+                        Jubilados/Menores · {{ formatPrice(priceReducida) }}
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          @case ('payment') {
+            <div class="booking-step">
+              <h2>Pago</h2>
+              <p class="step-sub">Elegí cómo querés pagar. El cobro se procesa de forma segura.</p>
+              <div class="payment-methods">
+                @for (m of paymentMethods; track m.key) {
+                  <button
+                    class="payment-method-btn"
+                    [class.active]="paymentMethod() === m.key"
+                    (click)="setPaymentMethod(m.key)"
+                  >
+                    <span>{{ m.label }}</span>
+                    @if (paymentMethod() === m.key) {
+                      <span class="payment-check">✓</span>
+                    }
+                  </button>
+                }
+              </div>
+              <div class="card-form" [hidden]="paymentMethod() !== 'tarjeta'">
+                <label>Número de tarjeta<input placeholder="0000 0000 0000 0000" /></label>
+                <label>Nombre del titular<input placeholder="Como figura en la tarjeta" /></label>
+                <div class="card-form-row">
+                  <label>Vencimiento<input placeholder="MM/AA" /></label>
+                  <label>CVV<input placeholder="123" /></label>
+                </div>
+              </div>
+              @if (paymentMethod() === 'mercadopago') {
+                <p class="mp-note">
+                  Vas a completar el pago en Mercado Pago al confirmar la compra. Te
+                  vamos a redirigir de forma segura.
+                </p>
+              }
+              <div class="secure-note">
+                <span class="checkbox-icon"></span>Pago 100% seguro · Recibís tus
+                entradas por email al instante
+              </div>
+            </div>
+          }
+          @case ('confirmation') {
+            <div class="booking-step confirmation-step">
+              <div class="confirm-check">✓</div>
+              <h2>¡Compra confirmada!</h2>
+              <p>Te enviamos las entradas a tu email. Código de reserva:</p>
+              <div class="order-number">{{ orderNumber() }}</div>
+              <button class="btn btn-primary btn-lg" (click)="reset()">Volver al inicio</button>
+            </div>
+          }
+        }
+
+        @if (step() !== 'confirmation') {
+          <div class="continue-wrap">
+            <button class="btn btn-primary btn-lg" [disabled]="continueDisabled()" (click)="handleContinue()">
+              {{ continueLabel() }}
+            </button>
+          </div>
+        }
       </div>
 
-      <aside class="booking-sidebar">
-        <div class="sidebar-movie">
-          <div
-            class="sidebar-poster"
-            [style.background-image]="'url(' + sel.movie.poster + ')'"
-            style="background-size: cover; background-position: center"
-          ></div>
-          <div>
-            <div class="sidebar-title">{{ sel.movie.title }}</div>
-            <div class="sidebar-sub">{{ sel.showtime.time }} hs</div>
-            <div class="sidebar-sub2">{{ sel.movie.sala }}</div>
+      @if (step() !== 'confirmation') {
+        <aside class="booking-sidebar">
+          <div class="sidebar-movie">
+            <div
+              class="sidebar-poster"
+              [style.background-image]="'url(' + sel.movie.poster + ')'"
+              style="background-size: cover; background-position: center"
+            ></div>
+            <div>
+              <div class="sidebar-title">{{ sel.movie.title }}</div>
+              <div class="sidebar-sub">{{ dateLabel }} · {{ timeLabel(sel) }}</div>
+              <div class="sidebar-sub2">{{ sel.movie.sala }}</div>
+            </div>
           </div>
-        </div>
-      </aside>
+          <div class="sidebar-rows">
+            <div class="sidebar-row">
+              <span>Butacas</span>
+              <span class="sidebar-row-right">
+                <span>{{ sortedSelectedSeats().join(', ') || '—' }}</span>
+                @if (step() !== 'seats') {
+                  <a class="edit-link" (click)="goToStep('seats')">Editar</a>
+                }
+              </span>
+            </div>
+            <div class="sidebar-row">
+              <span>Entradas</span><span>{{ selectedSeats().length }}</span>
+            </div>
+          </div>
+          @if (step() !== 'seats' && (generalCount() > 0 || reducidaCount() > 0)) {
+            <div class="sidebar-rows">
+              @if (generalCount() > 0) {
+                <div class="sidebar-row">
+                  <span>{{ generalCount() }}× General</span>
+                  <span style="color: var(--text-primary)">{{
+                    formatPrice(generalCount() * priceGeneral)
+                  }}</span>
+                </div>
+              }
+              @if (reducidaCount() > 0) {
+                <div class="sidebar-row">
+                  <span>{{ reducidaCount() }}× Jubilados/Menores</span>
+                  <span style="color: var(--text-primary)">{{
+                    formatPrice(reducidaCount() * priceReducida)
+                  }}</span>
+                </div>
+              }
+            </div>
+          }
+          <div class="sidebar-total">
+            <span>Total</span>
+            <span class="total-amount">{{ formatPrice(total()) }}</span>
+          </div>
+        </aside>
+      }
     </div>
   </div>
 }
