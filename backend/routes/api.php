@@ -26,3 +26,10 @@ Route::get('/reservas', [ReservaController::class, 'index']);
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
 Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store']);
+
+// Gestion de admin (requiere login)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/peliculas', [PeliculaController::class, 'store']);
+    Route::put('/peliculas/{pelicula}', [PeliculaController::class, 'update']);
+    Route::delete('/peliculas/{pelicula}', [PeliculaController::class, 'destroy']);
+});
