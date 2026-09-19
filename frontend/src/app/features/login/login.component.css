@@ -1,0 +1,153 @@
+/* Usa los tokens definidos en css/base.css del sitio (--bg, --accent, --font-display, etc.).
+   Si el componente se usa aislado, importar base.css en styles.css del proyecto. */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg, #0c0806);
+  color: var(--text-primary, #fefcbe);
+  font-family: var(--font-body, 'Jost', sans-serif);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary, #cc945b);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--text-primary, #fefcbe);
+}
+
+.login-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 72px var(--container-pad, 40px);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface, #18110d);
+  border: 1px solid var(--border, #2a1f17);
+  border-radius: var(--radius-lg, 6px);
+  padding: 40px 36px;
+  animation: ccFadeUp 0.5s ease-out;
+}
+
+.login-card h1 {
+  font-family: var(--font-display, 'Yeseva One', serif);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.25;
+  text-transform: uppercase;
+  margin: 0 0 30px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  color: var(--text-muted, #8a6f52);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.field input {
+  background: var(--surface-alt, #140f0b);
+  border: 1px solid var(--border, #2a1f17);
+  color: var(--text-primary, #fefcbe);
+  font-family: inherit;
+  font-size: 15px;
+  padding: 13px 16px;
+  border-radius: var(--radius-md, 4px);
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.field input:focus {
+  border-color: var(--accent, #ce3234);
+  outline: none;
+}
+
+.password-wrap {
+  position: relative;
+  display: flex;
+}
+
+.password-wrap input {
+  padding-right: 76px;
+}
+
+.toggle-pass {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #cc945b);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.toggle-pass:hover {
+  color: var(--text-primary, #fefcbe);
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.form-row a {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-secondary, #cc945b);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent, #ce3234);
+  cursor: pointer;
+}
+
+.login-form .btn-lg {
+  margin-top: 6px;
+}

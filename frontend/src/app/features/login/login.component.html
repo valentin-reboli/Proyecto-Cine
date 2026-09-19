@@ -1,0 +1,47 @@
+<div class="login-page">
+  <header class="site-header">
+    <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+    <a routerLink="/" class="back-link">&lsaquo; Volver al sitio</a>
+  </header>
+
+  <main class="login-main">
+    <section class="login-card">
+      <p class="eyebrow">Acceso administrador</p>
+      <h1>Iniciar sesi&oacute;n</h1>
+
+      <form class="login-form">
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input type="email" placeholder="tu@email.com" autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Contrase&ntilde;a</span>
+          <span class="password-wrap">
+            <input
+              type="password"
+              placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+              autocomplete="current-password"
+            />
+            <button type="button" class="toggle-pass">Ver</button>
+          </span>
+        </label>
+
+        <div class="form-row">
+          <label class="remember">
+            <input type="checkbox" />
+            Recordarme
+          </label>
+          <a routerLink="/recuperar">&iquest;Olvidaste tu contrase&ntilde;a?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">Ingresar</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="logo logo-sm">CINE<span class="accent">CONCORDIA</span></div>
+    <p>&copy; 2026 Cine Concordia. Todos los derechos reservados.</p>
+  </footer>
+</div>
