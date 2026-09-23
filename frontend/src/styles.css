@@ -415,11 +415,14 @@ button { font-family: var(--font-body); }
 }
 
 .btn-link {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--text-muted);
+  cursor: pointer;
   color: var(--text-primary);
   font-weight: 600;
   font-size: 15px;
   padding: 17px 8px;
-  border-bottom: 1px solid var(--text-muted);
   transition:
     border-color 0.2s ease,
     color 0.2s ease;
