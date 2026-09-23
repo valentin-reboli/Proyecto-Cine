@@ -9,33 +9,43 @@
       <p class="eyebrow">Acceso administrador</p>
       <h1>Iniciar sesi&oacute;n</h1>
 
-      <form class="login-form">
+      @if (error()) {
+        <p class="login-error">{{ error() }}</p>
+      }
+
+      <form class="login-form" (ngSubmit)="ingresar()">
         <label class="field">
           <span class="field-label">Email</span>
-          <input type="email" placeholder="tu@email.com" autocomplete="email" />
+          <input
+            type="email"
+            name="email"
+            placeholder="tu@email.com"
+            autocomplete="email"
+            [(ngModel)]="email"
+            required
+          />
         </label>
 
         <label class="field">
           <span class="field-label">Contrase&ntilde;a</span>
           <span class="password-wrap">
             <input
-              type="password"
+              [type]="verPassword ? 'text' : 'password'"
+              name="password"
               placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
               autocomplete="current-password"
+              [(ngModel)]="password"
+              required
             />
-            <button type="button" class="toggle-pass">Ver</button>
+            <button type="button" class="toggle-pass" (click)="toggleVerPassword()">
+              {{ verPassword ? 'Ocultar' : 'Ver' }}
+            </button>
           </span>
         </label>
 
-        <div class="form-row">
-          <label class="remember">
-            <input type="checkbox" />
-            Recordarme
-          </label>
-          <a routerLink="/recuperar">&iquest;Olvidaste tu contrase&ntilde;a?</a>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-lg">Ingresar</button>
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="enviando()">
+          {{ enviando() ? 'Ingresando…' : 'Ingresar' }}
+        </button>
       </form>
     </section>
   </main>

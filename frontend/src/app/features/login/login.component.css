@@ -151,3 +151,13 @@
 .login-form .btn-lg {
   margin-top: 6px;
 }
+
+.login-error {
+  background: var(--accent-soft-12, rgba(206, 50, 52, 0.12));
+  border: 1px solid var(--accent, #ce3234);
+  color: var(--text-primary, #fefcbe);
+  font-size: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 4px);
+  margin: 0 0 20px;
+}
