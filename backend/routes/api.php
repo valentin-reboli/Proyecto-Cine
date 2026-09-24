@@ -26,6 +26,7 @@ Route::get('/funciones/{funcion}/asientos', [FuncionController::class, 'asientos
 Route::get('/reservas', [ReservaController::class, 'index']);
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
+Route::post('/reservas/{reserva}/cancelar', [ReservaController::class, 'cancelar']);
 Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store']);
 
 // Gestion de admin (requiere login)
