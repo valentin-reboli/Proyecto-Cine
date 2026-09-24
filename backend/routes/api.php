@@ -20,6 +20,7 @@ Route::get('/peliculas', [PeliculaController::class, 'index']);
 Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
+Route::get('/funciones/{funcion}/asientos', [FuncionController::class, 'asientos']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::get('/reservas', [ReservaController::class, 'index']);
