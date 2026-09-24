@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FuncionController;
+use App\Http\Controllers\Api\GeneroController;
 use App\Http\Controllers\Api\PeliculaController;
 use App\Http\Controllers\Api\ReservaController;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ Route::get('/peliculas', [PeliculaController::class, 'index']);
 Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
+Route::get('/generos', [GeneroController::class, 'index']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::get('/reservas', [ReservaController::class, 'index']);
