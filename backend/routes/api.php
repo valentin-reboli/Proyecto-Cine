@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\GeneroController;
+use App\Http\Controllers\Api\PagoController;
 use App\Http\Controllers\Api\PeliculaController;
 use App\Http\Controllers\Api\ReservaController;
 use Illuminate\Http\Request;
@@ -27,8 +28,12 @@ Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/reservas', [ReservaController::class, 'index']);
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
+Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store']);
 
 // Gestion de admin (requiere login)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/peliculas', [PeliculaController::class, 'store']);
+    Route::put('/peliculas/{pelicula}', [PeliculaController::class, 'update']);
+    Route::delete('/peliculas/{pelicula}', [PeliculaController::class, 'destroy']);
     Route::post('/peliculas/{pelicula}/restaurar', [PeliculaController::class, 'restaurar']);
 });
