@@ -1,0 +1,346 @@
+<div class="admin-page">
+  <header class="site-header">
+    <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+    <nav class="main-nav">
+      <a routerLink="/">Ver sitio</a>
+    </nav>
+    <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-toolbar">
+      <div>
+        <p class="eyebrow">Panel de administrador</p>
+        <h1>Cartelera</h1>
+      </div>
+    </div>
+
+    @if (aviso()) {
+      <p class="admin-aviso">{{ aviso() }}</p>
+    }
+    @if (error()) {
+      <p class="admin-error">{{ error() }}</p>
+    }
+
+    <div class="admin-filtros">
+      <input
+        type="search"
+        placeholder="Buscar por título…"
+        [(ngModel)]="busqueda"
+        class="admin-search"
+      />
+      <select [(ngModel)]="generoFiltroId" class="admin-filtro-genero">
+        <option [ngValue]="0">Todos los géneros</option>
+        @for (genero of generos(); track genero.id) {
+          <option [ngValue]="genero.id">{{ genero.nombre }}</option>
+        }
+      </select>
+      @if (busqueda || generoFiltroId) {
+        <button type="button" class="btn-link admin-limpiar" (click)="toggleLimpiarFiltros()">
+          Limpiar filtros
+        </button>
+      }
+    </div>
+
+    @if (cargando()) {
+      <p class="admin-loading">Cargando cartelera…</p>
+    } @else {
+      <!-- EN CARTELERA -->
+      <section class="admin-section">
+        <div class="admin-section-head">
+          <h2>En cartelera <span class="admin-count">({{ enCarteleraFiltrada().length }})</span></h2>
+          <button type="button" class="btn btn-primary" (click)="abrirNueva('cartelera')">
+            + Agregar a cartelera
+          </button>
+        </div>
+
+        @if (enCarteleraFiltrada().length === 0) {
+          <p class="admin-empty">
+            @if (enCartelera().length === 0) {
+              No hay ninguna película en cartelera todavía.
+            } @else {
+              Ninguna coincide con la búsqueda/filtro.
+            }
+          </p>
+        } @else {
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th class="col-poster"></th>
+                <th>Título</th>
+                <th>Género</th>
+                <th>Duración</th>
+                <th>Clasif.</th>
+                <th class="col-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of enCarteleraFiltrada(); track p.id) {
+                <tr>
+                  <td class="col-poster">
+                    <div class="admin-thumb" [style.background-image]="p.poster_url ? 'url(' + p.poster_url + ')' : ''">
+                      @if (!p.poster_url) { <span>—</span> }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="admin-titulo">{{ p.titulo }}</span>
+                    @if (p.trailer_url) {
+                      <a [href]="p.trailer_url" target="_blank" rel="noopener" class="admin-trailer-link">▶ Trailer</a>
+                    }
+                  </td>
+                  <td>{{ p.genero?.nombre ?? '—' }}</td>
+                  <td>{{ p.duracion_min }} min</td>
+                  <td>{{ p.clasificacion || '—' }}</td>
+                  <td class="col-acciones">
+                    <button type="button" class="btn-link" (click)="abrirEdicion(p)" [disabled]="filaProcesando() === p.id">
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      class="admin-btn-danger"
+                      (click)="eliminar(p)"
+                      [disabled]="filaProcesando() === p.id"
+                    >
+                      {{ filaProcesando() === p.id ? '…' : 'Dar de baja' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <!-- PROXIMAMENTE -->
+      <section class="admin-section">
+        <div class="admin-section-head">
+          <h2>Próximamente <span class="admin-count">({{ proximamenteFiltrada().length }})</span></h2>
+          <button type="button" class="btn btn-primary" (click)="abrirNueva('proximamente')">
+            + Programar estreno
+          </button>
+        </div>
+
+        @if (proximamenteFiltrada().length === 0) {
+          <p class="admin-empty">
+            @if (proximamente().length === 0) {
+              No hay estrenos programados.
+            } @else {
+              Ninguna coincide con la búsqueda/filtro.
+            }
+          </p>
+        } @else {
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th class="col-poster"></th>
+                <th>Título</th>
+                <th>Género</th>
+                <th>Fecha de estreno</th>
+                <th class="col-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of proximamenteFiltrada(); track p.id) {
+                <tr>
+                  <td class="col-poster">
+                    <div class="admin-thumb" [style.background-image]="p.poster_url ? 'url(' + p.poster_url + ')' : ''">
+                      @if (!p.poster_url) { <span>—</span> }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="admin-titulo">{{ p.titulo }}</span>
+                    @if (p.trailer_url) {
+                      <a [href]="p.trailer_url" target="_blank" rel="noopener" class="admin-trailer-link">▶ Trailer</a>
+                    }
+                  </td>
+                  <td>{{ p.genero?.nombre ?? '—' }}</td>
+                  <td>{{ p.fecha_estreno || 'Sin fecha' }}</td>
+                  <td class="col-acciones">
+                    <button
+                      type="button"
+                      class="btn-link"
+                      (click)="publicarAhora(p)"
+                      [disabled]="filaProcesando() === p.id"
+                    >
+                      {{ filaProcesando() === p.id ? '…' : 'Publicar ahora' }}
+                    </button>
+                    <button type="button" class="btn-link" (click)="abrirEdicion(p)" [disabled]="filaProcesando() === p.id">
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      class="admin-btn-danger"
+                      (click)="eliminar(p)"
+                      [disabled]="filaProcesando() === p.id"
+                    >
+                      {{ filaProcesando() === p.id ? '…' : 'Dar de baja' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <!-- PAPELERA -->
+      <section class="admin-section">
+        <button type="button" class="admin-papelera-toggle" (click)="togglePapelera()">
+          {{ mostrarPapelera() ? '▾' : '▸' }} Dadas de baja
+          @if (inactivas().length > 0) {
+            <span class="admin-count">({{ inactivas().length }})</span>
+          }
+        </button>
+
+        @if (mostrarPapelera()) {
+          @if (inactivas().length === 0) {
+            <p class="admin-empty">No hay películas dadas de baja.</p>
+          } @else {
+            <table class="admin-table admin-table-papelera">
+              <thead>
+                <tr>
+                  <th>Título</th>
+                  <th>Género</th>
+                  <th class="col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of inactivas(); track p.id) {
+                  <tr>
+                    <td>{{ p.titulo }}</td>
+                    <td>{{ p.genero?.nombre ?? '—' }}</td>
+                    <td class="col-acciones">
+                      <button
+                        type="button"
+                        class="btn-link"
+                        (click)="restaurar(p)"
+                        [disabled]="filaProcesando() === p.id"
+                      >
+                        {{ filaProcesando() === p.id ? '…' : 'Restaurar' }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </section>
+    }
+  </main>
+
+  @if (mostrarForm()) {
+    <div class="admin-modal-backdrop" (click)="cerrarForm()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>{{ editandoId() ? 'Editar película' : 'Nueva película' }}</h2>
+
+        <form class="admin-form" (ngSubmit)="guardar()">
+          <label class="field">
+            <span class="field-label">Título *</span>
+            <input type="text" name="titulo" [(ngModel)]="form.titulo" [class.field-invalid]="erroresForm()['titulo']" />
+            @if (erroresForm()['titulo']) {
+              <span class="field-error">{{ erroresForm()['titulo'] }}</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Sinopsis</span>
+            <textarea name="sinopsis" rows="3" [(ngModel)]="form.sinopsis"></textarea>
+          </label>
+
+          <div class="admin-form-row">
+            <label class="field">
+              <span class="field-label">Duración (min) *</span>
+              <input
+                type="number"
+                name="duracion_min"
+                min="1"
+                [(ngModel)]="form.duracion_min"
+                [class.field-invalid]="erroresForm()['duracion_min']"
+              />
+              @if (erroresForm()['duracion_min']) {
+                <span class="field-error">{{ erroresForm()['duracion_min'] }}</span>
+              }
+            </label>
+
+            <label class="field">
+              <span class="field-label">Clasificación</span>
+              <select name="clasificacion" [(ngModel)]="form.clasificacion">
+                <option [ngValue]="null">Sin clasificar</option>
+                @for (c of clasificaciones; track c) {
+                  <option [ngValue]="c">{{ c }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Género *</span>
+            <select name="genero_id" [(ngModel)]="form.genero_id" [class.field-invalid]="erroresForm()['genero_id']">
+              @for (genero of generos(); track genero.id) {
+                <option [ngValue]="genero.id">{{ genero.nombre }}</option>
+              }
+            </select>
+            @if (erroresForm()['genero_id']) {
+              <span class="field-error">{{ erroresForm()['genero_id'] }}</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">URL del poster</span>
+            <input type="text" name="poster_url" placeholder="img/mi-poster.jpg" [(ngModel)]="form.poster_url" />
+            @if (form.poster_url) {
+              <div class="admin-preview-row">
+                <img [src]="form.poster_url" alt="" class="admin-preview-poster" />
+                <span class="admin-preview-label">Vista previa</span>
+              </div>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">URL de fondo (hero)</span>
+            <input type="text" name="backdrop_url" placeholder="img/mi-fondo.jpg" [(ngModel)]="form.backdrop_url" />
+            @if (form.backdrop_url) {
+              <div class="admin-preview-row">
+                <img [src]="form.backdrop_url" alt="" class="admin-preview-backdrop" />
+                <span class="admin-preview-label">Vista previa</span>
+              </div>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Link del trailer</span>
+            <input type="text" name="trailer_url" placeholder="https://youtube.com/..." [(ngModel)]="form.trailer_url" />
+          </label>
+
+          <label class="remember">
+            <input type="checkbox" name="en_cartelera" [(ngModel)]="form.en_cartelera" />
+            Está en cartelera ahora
+          </label>
+
+          @if (!form.en_cartelera) {
+            <label class="field">
+              <span class="field-label">Fecha de estreno *</span>
+              <input
+                type="date"
+                name="fecha_estreno"
+                [(ngModel)]="form.fecha_estreno"
+                [class.field-invalid]="erroresForm()['fecha_estreno']"
+              />
+              @if (erroresForm()['fecha_estreno']) {
+                <span class="field-error">{{ erroresForm()['fecha_estreno'] }}</span>
+              }
+            </label>
+          }
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarForm()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>
