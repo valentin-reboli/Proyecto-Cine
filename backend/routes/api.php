@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FormatoController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\GeneroController;
 use App\Http\Controllers\Api\PagoController;
@@ -25,6 +26,7 @@ Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
 Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/salas', [SalaController::class, 'index']);
+Route::get('/formatos', [FormatoController::class, 'index']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::get('/reservas', [ReservaController::class, 'index']);
@@ -42,4 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/salas', [SalaController::class, 'store']);
     Route::put('/salas/{sala}', [SalaController::class, 'update']);
     Route::delete('/salas/{sala}', [SalaController::class, 'destroy']);
+
+    Route::post('/formatos', [FormatoController::class, 'store']);
+    Route::put('/formatos/{formato}', [FormatoController::class, 'update']);
+    Route::delete('/formatos/{formato}', [FormatoController::class, 'destroy']);
 });
