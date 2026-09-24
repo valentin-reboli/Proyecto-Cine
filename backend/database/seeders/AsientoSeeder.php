@@ -14,11 +14,12 @@ class AsientoSeeder extends Seeder
      */
     public function run(): void
     {
-        $filas = ['A', 'B', 'C', 'D', 'E'];
+        // 9 filas (A-I) x 10 asientos = 90 butacas por sala.
+        $filas = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
 
         Sala::all()->each(function (Sala $sala) use ($filas) {
             foreach ($filas as $fila) {
-                for ($numero = 1; $numero <= 8; $numero++) {
+                for ($numero = 1; $numero <= 10; $numero++) {
                     Asiento::create([
                         'sala_id' => $sala->id,
                         'fila' => $fila,
