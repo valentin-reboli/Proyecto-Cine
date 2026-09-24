@@ -17,6 +17,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 // Catálogo público (cartelera, próximamente y funciones de cada película)
 Route::get('/peliculas', [PeliculaController::class, 'index']);
+Route::get('/peliculas/inactivas', [PeliculaController::class, 'inactivas'])->middleware('auth:sanctum');
 Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
@@ -26,3 +27,8 @@ Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/reservas', [ReservaController::class, 'index']);
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
+
+// Gestion de admin (requiere login)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/peliculas/{pelicula}/restaurar', [PeliculaController::class, 'restaurar']);
+});
