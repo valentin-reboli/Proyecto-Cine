@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\GeneroController;
 use App\Http\Controllers\Api\PagoController;
 use App\Http\Controllers\Api\PeliculaController;
 use App\Http\Controllers\Api\ReservaController;
+use App\Http\Controllers\Api\SalaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,7 @@ Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
 Route::get('/generos', [GeneroController::class, 'index']);
+Route::get('/salas', [SalaController::class, 'index']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::get('/reservas', [ReservaController::class, 'index']);
@@ -36,4 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/peliculas/{pelicula}', [PeliculaController::class, 'update']);
     Route::delete('/peliculas/{pelicula}', [PeliculaController::class, 'destroy']);
     Route::post('/peliculas/{pelicula}/restaurar', [PeliculaController::class, 'restaurar']);
+
+    Route::post('/salas', [SalaController::class, 'store']);
+    Route::put('/salas/{sala}', [SalaController::class, 'update']);
+    Route::delete('/salas/{sala}', [SalaController::class, 'destroy']);
 });
