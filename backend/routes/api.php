@@ -48,4 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/formatos', [FormatoController::class, 'store']);
     Route::put('/formatos/{formato}', [FormatoController::class, 'update']);
     Route::delete('/formatos/{formato}', [FormatoController::class, 'destroy']);
+
+    Route::post('/funciones', [FuncionController::class, 'store']);
+    Route::put('/funciones/{funcion}', [FuncionController::class, 'update']);
+    Route::post('/funciones/{funcion}/cancelar', [FuncionController::class, 'cancelar']);
 });
