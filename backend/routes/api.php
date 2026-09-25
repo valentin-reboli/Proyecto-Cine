@@ -24,6 +24,7 @@ Route::get('/peliculas/inactivas', [PeliculaController::class, 'inactivas'])->mi
 Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
 Route::get('/funciones', [FuncionController::class, 'index']);
 Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
+Route::get('/funciones/{funcion}/asientos', [FuncionController::class, 'asientos']);
 Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/salas', [SalaController::class, 'index']);
 Route::get('/formatos', [FormatoController::class, 'index']);
