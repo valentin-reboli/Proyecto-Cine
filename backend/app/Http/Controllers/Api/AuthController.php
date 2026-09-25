@@ -53,6 +53,17 @@ class AuthController extends Controller
         ]);
     }
 
+    #[OA\Post(
+        path: '/api/logout',
+        summary: 'Cerrar sesion (admin)',
+        description: 'Elimina el token de Sanctum utilizado actualmente.',
+        tags: ['Autenticacion'],
+        security: [['sanctum' => []]],
+        responses: [
+            new OA\Response(response: 204, description: 'Sesion cerrada correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado o token invalido.'),
+        ]
+    )]
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
