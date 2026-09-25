@@ -13,7 +13,7 @@ class SalaSeeder extends Seeder
      */
     public function run(): void
     {
-        $salas = ['Sala 1', 'Sala 2', 'Sala 3'];
+        $salas = ['Sala A', 'Sala B', 'Sala C'];
 
         foreach ($salas as $nombre) {
             Sala::create(['nombre' => $nombre]);
