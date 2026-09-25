@@ -7,9 +7,30 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
+    #[OA\Post(
+        path: '/api/login',
+        summary: 'Iniciar sesion (admin)',
+        description: 'Autentica al admin por email/password y devuelve un token de Sanctum.',
+        tags: ['Autenticacion'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'test@example.com'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password', example: 'password'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Login exitoso, devuelve user y token.'),
+            new OA\Response(response: 422, description: 'Credenciales invalidas.'),
+        ]
+    )]
     public function login(Request $request)
     {
         $credentials = $request->validate([
