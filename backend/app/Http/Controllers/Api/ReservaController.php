@@ -101,4 +101,32 @@ class ReservaController extends Controller
 
         return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos']);
     }
+
+    // Cancelacion manual: la dispara el timer del front cuando se vence el
+    // tiempo para pagar, asi las butacas quedan libres al instante en vez de
+    // esperar a que pase el cron reservas:liberar-vencidas.
+    public function cancelar(Request $request, Reserva $reserva)
+    {
+        $data = $request->validate([
+            'correo' => ['required', 'email'],
+        ]);
+
+        abort_unless(strcasecmp($reserva->invitado_correo, $data['correo']) === 0, 403);
+
+        if ($reserva->estado !== 'pendiente') {
+            return response()->json([
+                'message' => 'La reserva no esta pendiente (estado actual: '.$reserva->estado.').',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($reserva) {
+            ReservaAsiento::where('reserva_id', $reserva->id)
+                ->where('estado_bloqueo', 'temporal')
+                ->update(['estado_bloqueo' => 'liberado']);
+
+            $reserva->update(['estado' => 'expirada']);
+        });
+
+        return response()->json(null, 204);
+    }
 }
