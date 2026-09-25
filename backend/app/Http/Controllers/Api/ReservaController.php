@@ -91,6 +91,19 @@ class ReservaController extends Controller
         );
     }
 
+    // Listado completo para el admin (a diferencia de index(), no filtra por
+    // correo). Filtro opcional por estado para separar pendientes/pagadas/etc.
+    public function admin(Request $request)
+    {
+        $query = Reserva::query()->with(['funcion.pelicula', 'reservaAsientos.asiento']);
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->string('estado'));
+        }
+
+        return $query->latest()->get();
+    }
+
     public function show(Request $request, Reserva $reserva)
     {
         $data = $request->validate([

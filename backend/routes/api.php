@@ -56,4 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/funciones/{funcion}/cancelar', [FuncionController::class, 'cancelar']);
 
     Route::post('/generos', [GeneroController::class, 'store']);
+
+    Route::get('/admin/reservas', [ReservaController::class, 'admin']);
 });
