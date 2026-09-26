@@ -3,6 +3,11 @@ export type Lang = 'DOB' | 'SUB';
 export interface Showtime {
   time: string;
   lang: Lang;
+  // Datos de la funcion real del backend. Opcionales porque los datos de
+  // ejemplo (catalog.data.ts) no los tienen; el catalogo real siempre los trae.
+  funcionId?: number;
+  date?: string;
+  price?: number;
 }
 
 export interface Movie {
