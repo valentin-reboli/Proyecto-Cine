@@ -12,7 +12,7 @@ class PeliculaController extends Controller
     #[OA\Get(
         path: '/api/peliculas',
         summary: 'Listar cartelera o proximamente',
-        description: 'Devuelve las peliculas activas. Por defecto la cartelera (en_cartelera=true); con ?proximamente=1 devuelve las de proximo estreno.',
+        description: 'Devuelve las peliculas activas con su genero y sus funciones no canceladas (con formato). Por defecto la cartelera (en_cartelera=true); con ?proximamente=1 devuelve las de proximo estreno.',
         tags: ['Peliculas'],
         parameters: [
             new OA\Parameter(name: 'proximamente', in: 'query', required: false, description: 'Si es 1, devuelve proximos estrenos en vez de cartelera.', schema: new OA\Schema(type: 'boolean')),
@@ -23,7 +23,11 @@ class PeliculaController extends Controller
     )]
     public function index(Request $request)
     {
-        $query = Pelicula::query()->with('genero')->where('activa', true);
+        $query = Pelicula::query()
+            ->with(['genero', 'funciones' => function ($query) {
+                $query->where('cancelada', false)->orderBy('fecha_hora');
+            }, 'funciones.formato'])
+            ->where('activa', true);
 
         if ($request->boolean('proximamente')) {
             $query->where('en_cartelera', false)->whereNotNull('fecha_estreno');
