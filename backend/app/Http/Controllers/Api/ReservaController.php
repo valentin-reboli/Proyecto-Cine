@@ -7,7 +7,7 @@ use App\Models\Asiento;
 use App\Models\Funcion;
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -113,14 +113,10 @@ class ReservaController extends Controller
 
                 return $reserva;
             });
-        } catch (QueryException $e) {
-            if ($e->getCode() === '23000') {
-                return response()->json([
-                    'message' => 'Una o mas butacas ya fueron reservadas para esta funcion.',
-                ], 409);
-            }
-
-            throw $e;
+        } catch (UniqueConstraintViolationException) {
+            return response()->json([
+                'message' => 'Una o mas butacas ya fueron reservadas para esta funcion.',
+            ], 409);
         }
 
         return response()->json(
