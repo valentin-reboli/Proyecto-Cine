@@ -1,0 +1,22 @@
+{
+	admin off
+	auto_https off
+}
+
+:{$PORT:8080} {
+	encode gzip
+
+	# La API vive en otro servicio; BACKEND_URL es su URL publica (https://...).
+	handle /api/* {
+		reverse_proxy {$BACKEND_URL} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	# Angular: cualquier ruta que no sea un archivo (/reserva, /admin, ...) carga index.html.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
