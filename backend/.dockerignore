@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+database/*.sqlite
+bootstrap/cache/*.php
+storage/api-docs
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+!storage/framework/*/.gitignore
+!storage/framework/cache/data/.gitignore
