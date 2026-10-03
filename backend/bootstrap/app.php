@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // En Railway el HTTPS lo termina su proxy; sin esto Laravel arma las
+        // URLs (por ej. los assets de Swagger) con http y el navegador las bloquea.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
