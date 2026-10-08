@@ -15,6 +15,11 @@ class Reserva extends Model
         'total',
         'estado',
         'codigo_qr',
+        'usada_en',
+    ];
+
+    protected $casts = [
+        'usada_en' => 'datetime',
     ];
 
     public function user()
