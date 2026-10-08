@@ -1,13 +1,18 @@
 {
 	admin off
 	auto_https off
+	servers {
+		# Railway termina el HTTPS antes de llegar aca; se respeta su X-Forwarded-Proto.
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
 }
 
 :{$PORT:8080} {
 	encode gzip
 
-	# La API vive en otro servicio; BACKEND_URL es su URL publica (https://...).
-	handle /api/* {
+	# La API vive en otro servicio (o en el mismo contenedor); BACKEND_URL es su URL.
+	@backend path /api/* /docs /docs/*
+	handle @backend {
 		reverse_proxy {$BACKEND_URL} {
 			header_up Host {upstream_hostport}
 		}
