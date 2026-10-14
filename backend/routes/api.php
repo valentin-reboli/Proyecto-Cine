@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EntradaController;
 use App\Http\Controllers\Api\FormatoController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\GeneroController;
@@ -58,4 +59,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/generos', [GeneroController::class, 'store']);
 
     Route::get('/admin/reservas', [ReservaController::class, 'admin']);
+
+    Route::post('/entradas/validar', [EntradaController::class, 'validar']);
 });
