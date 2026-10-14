@@ -8,6 +8,9 @@ if [ "$(php artisan tinker --execute='echo \App\Models\Sala::count();' | tail -n
     php artisan db:seed --force
 fi
 
+# Admin definido con ADMIN_EMAIL / ADMIN_PASSWORD (no hace nada si no estan cargadas).
+php artisan db:seed --class=AdminSeeder --force
+
 php artisan l5-swagger:generate
 
 # Libera las butacas de reservas vencidas (reservas:liberar-vencidas, cada minuto).
