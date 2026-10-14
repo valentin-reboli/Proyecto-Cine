@@ -35,11 +35,12 @@ export class LoginComponent {
       },
       error: (err) => {
         this.enviando.set(false);
-        // 422 = credenciales mal; cualquier otro error es del servidor o de la conexion.
+        // 422 = credenciales mal; cualquier otro error es del servidor o de la conexion
+        // (el codigo ayuda a diagnosticar; el detalle esta en /api/estado).
         this.error.set(
           err?.status === 422
             ? 'Email o contraseña incorrectos.'
-            : 'No se pudo conectar con el servidor. Probá de nuevo en un rato.',
+            : `No se pudo conectar con el servidor (error ${err?.status || 'de red'}). Probá de nuevo en un rato.`,
         );
       },
     });
