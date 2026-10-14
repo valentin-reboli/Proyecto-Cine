@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EstadoController;
 use App\Http\Controllers\Api\FormatoController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\GeneroController;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/estado', EstadoController::class);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
