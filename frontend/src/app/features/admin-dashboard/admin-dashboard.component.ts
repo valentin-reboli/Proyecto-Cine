@@ -1,9 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminPeliculaService } from '../../core/services/admin-pelicula.service';
+import { AdminUsuarioService } from '../../core/services/admin-usuario.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminPelicula, AdminPeliculaForm, Genero } from '../../core/models/admin-pelicula.model';
+import { AdminUsuario, AdminUsuarioForm } from '../../core/models/admin-usuario.model';
 
 export const CLASIFICACIONES = ['ATP', '+13', '+16', '+18'];
 
@@ -20,16 +23,24 @@ const FORM_VACIO: AdminPeliculaForm = {
   genero_id: 0,
 };
 
+const FORM_USUARIO_VACIO: AdminUsuarioForm = {
+  name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+};
+
 type Seccion = 'cartelera' | 'proximamente';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [FormsModule, RouterLink],
+  imports: [DatePipe, FormsModule, RouterLink],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly peliculaService = inject(AdminPeliculaService);
+  private readonly usuarioService = inject(AdminUsuarioService);
   private readonly auth = inject(AuthService);
 
   readonly clasificaciones = CLASIFICACIONES;
@@ -66,6 +77,13 @@ export class AdminDashboardComponent implements OnInit {
   readonly erroresForm = signal<Record<string, string>>({});
   form: AdminPeliculaForm = { ...FORM_VACIO };
 
+  // Usuarios del panel
+  readonly usuarios = signal<AdminUsuario[]>([]);
+  readonly mostrarFormUsuario = signal(false);
+  readonly guardandoUsuario = signal(false);
+  readonly erroresUsuario = signal<Record<string, string>>({});
+  formUsuario: AdminUsuarioForm = { ...FORM_USUARIO_VACIO };
+
   ngOnInit(): void {
     this.peliculaService.getGeneros().subscribe({
       next: (generos) => this.generos.set(generos),
@@ -73,6 +91,7 @@ export class AdminDashboardComponent implements OnInit {
     });
 
     this.cargarCatalogo();
+    this.cargarUsuarios();
   }
 
   private filtrar(lista: AdminPelicula[]): AdminPelicula[] {
@@ -282,6 +301,84 @@ export class AdminDashboardComponent implements OnInit {
       error: () => {
         this.filaProcesando.set(null);
         this.error.set('No se pudo restaurar la película.');
+      },
+    });
+  }
+
+  // --- Usuarios ---
+
+  cargarUsuarios(): void {
+    this.usuarioService.list().subscribe({
+      next: (usuarios) => this.usuarios.set(usuarios),
+      error: () => this.error.set('No se pudieron cargar los usuarios.'),
+    });
+  }
+
+  abrirNuevoUsuario(): void {
+    this.formUsuario = { ...FORM_USUARIO_VACIO };
+    this.erroresUsuario.set({});
+    this.mostrarFormUsuario.set(true);
+  }
+
+  cerrarFormUsuario(): void {
+    if (this.guardandoUsuario()) {
+      return;
+    }
+
+    this.mostrarFormUsuario.set(false);
+  }
+
+  private validarUsuario(): boolean {
+    const errores: Record<string, string> = {};
+    const f = this.formUsuario;
+
+    if (!f.name.trim()) {
+      errores['name'] = 'El nombre es obligatorio.';
+    }
+    if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) {
+      errores['email'] = 'Ingresá un email válido.';
+    }
+    if (f.password.length < 8) {
+      errores['password'] = 'La contraseña tiene que tener al menos 8 caracteres.';
+    }
+    if (f.password_confirmation !== f.password) {
+      errores['password_confirmation'] = 'Las contraseñas no coinciden.';
+    }
+
+    this.erroresUsuario.set(errores);
+
+    return Object.keys(errores).length === 0;
+  }
+
+  guardarUsuario(): void {
+    if (!this.validarUsuario()) {
+      return;
+    }
+
+    this.guardandoUsuario.set(true);
+    this.error.set('');
+
+    const payload: AdminUsuarioForm = {
+      ...this.formUsuario,
+      name: this.formUsuario.name.trim(),
+      email: this.formUsuario.email.trim(),
+    };
+
+    this.usuarioService.create(payload).subscribe({
+      next: (usuario) => {
+        this.guardandoUsuario.set(false);
+        this.mostrarFormUsuario.set(false);
+        this.mostrarAviso(`Usuario ${usuario.email} creado. Ya puede iniciar sesión.`);
+        this.cargarUsuarios();
+      },
+      error: (err) => {
+        this.guardandoUsuario.set(false);
+
+        if (err?.error?.errors?.email) {
+          this.erroresUsuario.set({ email: 'Ya existe un usuario con ese email.' });
+        } else {
+          this.error.set(err?.error?.message ?? 'No se pudo crear el usuario.');
+        }
       },
     });
   }

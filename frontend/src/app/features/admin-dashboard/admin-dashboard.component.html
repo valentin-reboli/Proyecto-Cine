@@ -226,8 +226,110 @@
           }
         }
       </section>
+
+      <!-- USUARIOS -->
+      <section class="admin-section">
+        <div class="admin-section-head">
+          <h2>Usuarios del panel <span class="admin-count">({{ usuarios().length }})</span></h2>
+          <button type="button" class="btn btn-primary" (click)="abrirNuevoUsuario()">
+            + Nuevo usuario
+          </button>
+        </div>
+
+        @if (usuarios().length === 0) {
+          <p class="admin-empty">No hay usuarios cargados.</p>
+        } @else {
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Alta</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of usuarios(); track u.id) {
+                <tr>
+                  <td>{{ u.name }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>{{ u.created_at | date: 'dd/MM/yyyy' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
     }
   </main>
+
+  @if (mostrarFormUsuario()) {
+    <div class="admin-modal-backdrop" (click)="cerrarFormUsuario()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>Nuevo usuario</h2>
+
+        <form class="admin-form" (ngSubmit)="guardarUsuario()">
+          <label class="field">
+            <span class="field-label">Nombre *</span>
+            <input type="text" name="name" [(ngModel)]="formUsuario.name" [class.field-invalid]="erroresUsuario()['name']" />
+            @if (erroresUsuario()['name']) {
+              <span class="field-error">{{ erroresUsuario()['name'] }}</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Email *</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="off"
+              [(ngModel)]="formUsuario.email"
+              [class.field-invalid]="erroresUsuario()['email']"
+            />
+            @if (erroresUsuario()['email']) {
+              <span class="field-error">{{ erroresUsuario()['email'] }}</span>
+            }
+          </label>
+
+          <div class="admin-form-row">
+            <label class="field">
+              <span class="field-label">Contraseña *</span>
+              <input
+                type="password"
+                name="password"
+                autocomplete="new-password"
+                [(ngModel)]="formUsuario.password"
+                [class.field-invalid]="erroresUsuario()['password']"
+              />
+              @if (erroresUsuario()['password']) {
+                <span class="field-error">{{ erroresUsuario()['password'] }}</span>
+              }
+            </label>
+
+            <label class="field">
+              <span class="field-label">Repetir contraseña *</span>
+              <input
+                type="password"
+                name="password_confirmation"
+                autocomplete="new-password"
+                [(ngModel)]="formUsuario.password_confirmation"
+                [class.field-invalid]="erroresUsuario()['password_confirmation']"
+              />
+              @if (erroresUsuario()['password_confirmation']) {
+                <span class="field-error">{{ erroresUsuario()['password_confirmation'] }}</span>
+              }
+            </label>
+          </div>
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarFormUsuario()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
+              {{ guardandoUsuario() ? 'Creando…' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
 
   @if (mostrarForm()) {
     <div class="admin-modal-backdrop" (click)="cerrarForm()">
