@@ -6,7 +6,7 @@ import { AdminPeliculaService } from '../../core/services/admin-pelicula.service
 import { AdminUsuarioService } from '../../core/services/admin-usuario.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminPelicula, AdminPeliculaForm, Genero } from '../../core/models/admin-pelicula.model';
-import { AdminUsuario, AdminUsuarioForm } from '../../core/models/admin-usuario.model';
+import { AdminUsuario, AdminUsuarioForm, CambioPasswordForm } from '../../core/models/admin-usuario.model';
 
 export const CLASIFICACIONES = ['ATP', '+13', '+16', '+18'];
 
@@ -83,6 +83,10 @@ export class AdminDashboardComponent implements OnInit {
   readonly guardandoUsuario = signal(false);
   readonly erroresUsuario = signal<Record<string, string>>({});
   formUsuario: AdminUsuarioForm = { ...FORM_USUARIO_VACIO };
+
+  // Cambio de contraseña (null = modal cerrado)
+  readonly usuarioPassword = signal<AdminUsuario | null>(null);
+  formPassword: CambioPasswordForm = { password: '', password_confirmation: '' };
 
   ngOnInit(): void {
     this.peliculaService.getGeneros().subscribe({
@@ -338,6 +342,16 @@ export class AdminDashboardComponent implements OnInit {
     if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) {
       errores['email'] = 'Ingresá un email válido.';
     }
+    Object.assign(errores, this.erroresPassword(f));
+
+    this.erroresUsuario.set(errores);
+
+    return Object.keys(errores).length === 0;
+  }
+
+  private erroresPassword(f: CambioPasswordForm): Record<string, string> {
+    const errores: Record<string, string> = {};
+
     if (f.password.length < 8) {
       errores['password'] = 'La contraseña tiene que tener al menos 8 caracteres.';
     }
@@ -345,9 +359,47 @@ export class AdminDashboardComponent implements OnInit {
       errores['password_confirmation'] = 'Las contraseñas no coinciden.';
     }
 
+    return errores;
+  }
+
+  abrirCambioPassword(usuario: AdminUsuario): void {
+    this.formPassword = { password: '', password_confirmation: '' };
+    this.erroresUsuario.set({});
+    this.usuarioPassword.set(usuario);
+  }
+
+  cerrarCambioPassword(): void {
+    if (this.guardandoUsuario()) {
+      return;
+    }
+
+    this.usuarioPassword.set(null);
+  }
+
+  guardarPassword(): void {
+    const usuario = this.usuarioPassword();
+    const errores = this.erroresPassword(this.formPassword);
+
     this.erroresUsuario.set(errores);
 
-    return Object.keys(errores).length === 0;
+    if (!usuario || Object.keys(errores).length > 0) {
+      return;
+    }
+
+    this.guardandoUsuario.set(true);
+    this.error.set('');
+
+    this.usuarioService.cambiarPassword(usuario.id, this.formPassword).subscribe({
+      next: () => {
+        this.guardandoUsuario.set(false);
+        this.usuarioPassword.set(null);
+        this.mostrarAviso(`Contraseña de ${usuario.email} actualizada.`);
+      },
+      error: (err) => {
+        this.guardandoUsuario.set(false);
+        this.error.set(err?.error?.message ?? 'No se pudo cambiar la contraseña.');
+      },
+    });
   }
 
   guardarUsuario(): void {

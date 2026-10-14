@@ -12,3 +12,5 @@ export interface AdminUsuarioForm {
   password: string;
   password_confirmation: string;
 }
+
+export type CambioPasswordForm = Pick<AdminUsuarioForm, 'password' | 'password_confirmation'>;

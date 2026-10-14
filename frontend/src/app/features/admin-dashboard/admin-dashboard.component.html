@@ -245,6 +245,7 @@
                 <th>Nombre</th>
                 <th>Email</th>
                 <th>Alta</th>
+                <th class="col-acciones">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -253,6 +254,11 @@
                   <td>{{ u.name }}</td>
                   <td>{{ u.email }}</td>
                   <td>{{ u.created_at | date: 'dd/MM/yyyy' }}</td>
+                  <td class="col-acciones">
+                    <button type="button" class="btn-link" (click)="abrirCambioPassword(u)">
+                      Cambiar contraseña
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -324,6 +330,52 @@
             <button type="button" class="btn-back" (click)="cerrarFormUsuario()">Cancelar</button>
             <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
               {{ guardandoUsuario() ? 'Creando…' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (usuarioPassword(); as usuario) {
+    <div class="admin-modal-backdrop" (click)="cerrarCambioPassword()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>Cambiar contraseña</h2>
+        <p class="admin-modal-sub">{{ usuario.name }} · {{ usuario.email }}</p>
+
+        <form class="admin-form" (ngSubmit)="guardarPassword()">
+          <label class="field">
+            <span class="field-label">Nueva contraseña *</span>
+            <input
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              [(ngModel)]="formPassword.password"
+              [class.field-invalid]="erroresUsuario()['password']"
+            />
+            @if (erroresUsuario()['password']) {
+              <span class="field-error">{{ erroresUsuario()['password'] }}</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Repetir contraseña *</span>
+            <input
+              type="password"
+              name="password_confirmation"
+              autocomplete="new-password"
+              [(ngModel)]="formPassword.password_confirmation"
+              [class.field-invalid]="erroresUsuario()['password_confirmation']"
+            />
+            @if (erroresUsuario()['password_confirmation']) {
+              <span class="field-error">{{ erroresUsuario()['password_confirmation'] }}</span>
+            }
+          </label>
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarCambioPassword()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
+              {{ guardandoUsuario() ? 'Guardando…' : 'Guardar' }}
             </button>
           </div>
         </form>

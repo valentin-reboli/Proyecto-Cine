@@ -268,6 +268,12 @@
   margin: 0 0 24px;
 }
 
+.admin-modal-sub {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: -16px 0 20px;
+}
+
 .admin-form {
   display: flex;
   flex-direction: column;
