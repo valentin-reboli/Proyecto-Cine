@@ -46,3 +46,37 @@ Automatización de tareas: reduce las tareas manuales mediante el envío automá
 Validación de entradas: facilita el control de acceso mediante códigos QR asociados a cada entrada.
 Gestión administrativa: proporciona al personal del cine una plataforma desde la cual administrar los diferentes elementos del sistema.
 Mejora de la experiencia del cliente: ofrece un proceso de compra más rápido, accesible y organizado, desde la consulta de la cartelera hasta la obtención de la entrada.
+
+## Autenticación con Google
+
+Este proyecto puede integrar un inicio de sesión con Google usando OAuth 2.0.
+
+La variable que se usa en la app para el identificador del cliente de Google es:
+
+- `GOOGLE_CLIENT_ID`
+
+Importante: para inicio de sesión con Google no se usa una "API key" como tal, sino un Client ID de OAuth (público) y, en algunos flujos del backend, también puede existir un `GOOGLE_CLIENT_SECRET` para intercambiar el código de autenticación.
+
+En este repositorio, la configuración se ve así:
+
+- `backend/.env` o `.env.example` incluye:
+  ```env
+  GOOGLE_CLIENT_ID=tu_client_id_de_google.apps.googleusercontent.com
+  ```
+- En el backend se lee en:
+  ```php
+  'google' => [
+      'client_id' => env('GOOGLE_CLIENT_ID'),
+  ],
+  ```
+
+Pasos para configurarlo:
+
+1. Crear un proyecto en Google Cloud Console.
+2. Habilitar la API de "Google Identity / OAuth 2.0".
+3. Crear un OAuth Client ID del tipo "Web application".
+4. Agregar los dominios o URLs autorizadas (por ejemplo `http://localhost:4200`).
+5. Copiar el Client ID y guardarlo en la variable `GOOGLE_CLIENT_ID`.
+
+Si se va a usar login con Google desde el frontend, normalmente solo hace falta el `GOOGLE_CLIENT_ID`. Si el backend intercambia el token con Google, puede requerir además `GOOGLE_CLIENT_SECRET`.
+
