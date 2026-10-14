@@ -16,6 +16,10 @@ export class AdminUsuarioService {
     return this.http.post<AdminUsuario>(`${API_URL}/usuarios`, data);
   }
 
+  update(id: number, data: Pick<AdminUsuario, 'name' | 'email'>): Observable<AdminUsuario> {
+    return this.http.put<AdminUsuario>(`${API_URL}/usuarios/${id}`, data);
+  }
+
   cambiarPassword(id: number, data: CambioPasswordForm): Observable<void> {
     return this.http.put<void>(`${API_URL}/usuarios/${id}/password`, data);
   }

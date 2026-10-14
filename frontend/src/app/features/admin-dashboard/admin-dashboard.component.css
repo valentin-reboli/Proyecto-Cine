@@ -10,6 +10,10 @@
   margin: 0 auto;
 }
 
+.main-nav a.activo {
+  color: var(--accent);
+}
+
 .admin-toolbar {
   margin-bottom: 20px;
 }

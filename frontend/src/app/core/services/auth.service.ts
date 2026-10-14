@@ -39,6 +39,11 @@ export class AuthService {
     );
   }
 
+  // Usuario dueño del token actual (GET /api/user).
+  me(): Observable<AdminUser> {
+    return this.http.get<AdminUser>(`${API_URL}/user`);
+  }
+
   logout(): void {
     this.http.post(`${API_URL}/logout`, {}).subscribe({
       complete: () => this.clearSession(),
