@@ -14,3 +14,4 @@
 .pelicula-poster { display: block; aspect-ratio: 2 / 3; background-color: var(--surface-alt); }
 .pelicula-title { padding: 0 10px; font-weight: 600; font-size: 14px; }
 .pelicula-meta { padding: 0 10px 10px; font-size: 11px; color: var(--text-secondary); }
+.funcion-dia { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-light); }

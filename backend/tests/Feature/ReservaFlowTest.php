@@ -11,6 +11,7 @@ use App\Models\Sala;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ReservaFlowTest extends TestCase
@@ -178,5 +179,56 @@ class ReservaFlowTest extends TestCase
             'invitado_nombre' => 'Ana',
             'invitado_correo' => 'ana@test.com',
         ])->assertUnprocessable();
+    }
+
+    public function test_al_pagar_se_envia_el_comprobante_con_el_qr_a_n8n(): void
+    {
+        config(['services.n8n.compra_webhook' => 'https://n8n.test/compra']);
+        Http::fake(['n8n.test/*' => Http::response(['ok' => true])]);
+
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+
+        $reservaId = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id,
+            'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana',
+            'invitado_correo' => 'ana@test.com',
+            'invitado_telefono' => '3456123456',
+        ])->json('id');
+
+        $pago = $this->postJson("/api/reservas/{$reservaId}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])
+            ->assertCreated();
+
+        $codigo = $pago->json('reserva.codigo_qr');
+        $this->assertNotNull($pago->json('reserva.comprobante_enviado_en'));
+
+        Http::assertSent(fn ($r) => $r['evento'] === 'compra_confirmada'
+            && $r['comprador']['correo'] === 'ana@test.com'
+            && $r['butacas'] === ['A1']
+            && str_ends_with($r['qr_url'], "/api/entradas/qr/{$codigo}.png"));
+
+        $this->get("/api/entradas/qr/{$codigo}.png")->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->get('/api/entradas/qr/inexistente.png')->assertNotFound();
+    }
+
+    public function test_si_n8n_falla_la_compra_igual_se_confirma(): void
+    {
+        config(['services.n8n.compra_webhook' => 'https://n8n.test/compra']);
+        Http::fake(['n8n.test/*' => Http::response('error', 500)]);
+
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+        $reservaId = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id,
+            'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana',
+            'invitado_correo' => 'ana@test.com',
+        ])->json('id');
+
+        $this->postJson("/api/reservas/{$reservaId}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])
+            ->assertCreated()
+            ->assertJsonPath('reserva.estado', 'pagada')
+            ->assertJsonPath('reserva.comprobante_enviado_en', null);
     }
 }

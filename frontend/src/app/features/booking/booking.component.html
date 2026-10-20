@@ -59,9 +59,8 @@
               @if (dias().length === 0) {
                 <p class="step-sub">Esta película todavía no tiene funciones programadas.</p>
               }
-              @for (dia of dias(); track dia.fecha) {
-                <h3 class="dia-title">{{ dia.label }}</h3>
-                <div class="funcion-list">
+              <div class="funcion-list">
+                @for (dia of dias(); track dia.fecha) {
                   @for (f of dia.funciones; track f.funcionId) {
                     <button
                       type="button"
@@ -69,13 +68,14 @@
                       [class.active]="sel.showtime?.funcionId === f.funcionId"
                       (click)="elegirFuncion(f)"
                     >
+                      <span class="funcion-dia">{{ dia.label }}</span>
                       <strong>{{ f.time }}</strong>
                       <span>{{ f.format }} · {{ langLabel(f) }}</span>
                       <span>{{ f.sala }} · {{ formatPrice(f.price ?? 0) }}</span>
                     </button>
                   }
-                </div>
-              }
+                }
+              </div>
             </div>
           }
           @case ('seats') {
@@ -174,7 +174,15 @@
             <div class="booking-step confirmation-step">
               <div class="confirm-check">✓</div>
               <h2>¡Compra confirmada!</h2>
-              <p>Mostrá este código QR en la entrada del cine. Reserva Nº {{ reservaId() }}:</p>
+              <p>Pago verificado y aprobado. Reserva Nº {{ reservaId() }}.</p>
+              <p>
+                @if (comprobanteEnviado()) {
+                  Te enviamos el comprobante y el código QR por mensaje.
+                } @else {
+                  No pudimos enviarte el comprobante por mensaje todavía; guardá este código QR.
+                }
+                Mostralo en la entrada del cine:
+              </p>
               @if (qrSrc()) {
                 <img [src]="qrSrc()" alt="Código QR de tu entrada" class="qr-img" />
               }

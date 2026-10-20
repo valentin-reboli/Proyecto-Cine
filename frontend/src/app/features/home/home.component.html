@@ -255,20 +255,18 @@
         @if (detalleDias().length === 0) {
           <p class="detalle-vacio">Todavía no hay funciones programadas.</p>
         }
-        @for (dia of detalleDias(); track dia.fecha) {
-          <div class="detalle-dia">
-            <span class="detalle-dia-label">{{ dia.label }}</span>
-            <div class="detalle-chips">
-              @for (f of dia.funciones; track f.funcionId) {
-                <div class="detalle-chip">
-                  <strong>{{ f.time }}</strong>
-                  <span>{{ f.format }} · {{ langLabel(f) }}</span>
-                  <span>{{ formatPrice(f.price ?? 0) }}</span>
-                </div>
-              }
-            </div>
-          </div>
-        }
+        <div class="detalle-chips">
+          @for (dia of detalleDias(); track dia.fecha) {
+            @for (f of dia.funciones; track f.funcionId) {
+              <div class="detalle-chip">
+                <span class="detalle-chip-dia">{{ dia.label }}</span>
+                <strong>{{ f.time }}</strong>
+                <span>{{ f.format }} · {{ langLabel(f) }}</span>
+                <span>{{ formatPrice(f.price ?? 0) }}</span>
+              </div>
+            }
+          }
+        </div>
         <div class="detalle-comprar">
           <button type="button" class="btn btn-primary" (click)="comprar()">Comprar entradas</button>
         </div>

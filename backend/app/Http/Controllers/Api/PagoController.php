@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pago;
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
+use App\Services\CompraNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -41,7 +42,7 @@ class PagoController extends Controller
             new OA\Response(response: 422, description: 'La reserva no esta pendiente de pago.'),
         ]
     )]
-    public function store(Request $request, Reserva $reserva)
+    public function store(Request $request, Reserva $reserva, CompraNotifier $notificador)
     {
         $data = $request->validate([
             'correo' => ['required', 'email'],
@@ -88,6 +89,9 @@ class PagoController extends Controller
                 'pagado_en' => now(),
             ]);
         });
+
+        // Comprobante y QR por mensaje (n8n). Si falla, la compra igual esta confirmada.
+        $notificador->enviar($reserva->fresh());
 
         return response()->json(
             $pago->load(['reserva.funcion.pelicula', 'reserva.reservaAsientos.asiento']),

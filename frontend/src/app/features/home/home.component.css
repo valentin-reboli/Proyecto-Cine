@@ -36,3 +36,4 @@
 .detalle-estreno { font-size: 20px; font-weight: 600; margin: 0; }
 .detalle-comprar { margin-top: 22px; }
 .coming-soon-card { cursor: pointer; }
+.detalle-chip-dia { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-light) !important; }

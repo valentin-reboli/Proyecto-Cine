@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FormatoController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\GeneroController;
 use App\Http\Controllers\Api\PagoController;
+use App\Http\Controllers\Api\QrController;
 use App\Http\Controllers\Api\PeliculaController;
 use App\Http\Controllers\Api\ReservaController;
 use App\Http\Controllers\Api\SalaController;
@@ -35,6 +36,7 @@ Route::get('/funciones/{funcion}/asientos', [FuncionController::class, 'asientos
 Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/salas', [SalaController::class, 'index']);
 Route::get('/formatos', [FormatoController::class, 'index']);
+Route::get('/entradas/qr/{codigo}.png', [QrController::class, 'show']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::get('/reservas', [ReservaController::class, 'index']);

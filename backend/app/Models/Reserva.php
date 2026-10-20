@@ -16,10 +16,12 @@ class Reserva extends Model
         'estado',
         'codigo_qr',
         'usada_en',
+        'comprobante_enviado_en',
     ];
 
     protected $casts = [
         'usada_en' => 'datetime',
+        'comprobante_enviado_en' => 'datetime',
     ];
 
     public function user()

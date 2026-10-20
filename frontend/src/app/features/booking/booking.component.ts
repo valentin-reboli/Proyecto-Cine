@@ -19,6 +19,14 @@ interface ApiAsiento {
   estado: 'disponible' | 'temporal' | 'ocupado' | 'bloqueado';
 }
 
+interface ReservaVerificada {
+  id: number;
+  estado: string;
+  codigo_qr: string | null;
+  comprobante_enviado_en: string | null;
+  pagos?: { estado: string }[];
+}
+
 interface ProgressStep {
   key: Step;
   label: string;
@@ -76,6 +84,7 @@ export class BookingComponent implements OnInit {
   readonly codigo = signal<string | null>(null);
   readonly reservaId = signal<number | null>(null);
   readonly qrSrc = signal<string | null>(null);
+  readonly comprobanteEnviado = signal(false);
 
   datos = { nombre: '', correo: '', telefono: '', acepta_marketing: false };
 
@@ -206,7 +215,7 @@ export class BookingComponent implements OnInit {
   }
 
   continueLabel(): string {
-    if (this.procesando()) return 'Procesando…';
+    if (this.procesando()) return 'Procesando y verificando el pago…';
     return this.step() === 'payment' ? `Confirmar compra · ${this.formatPrice(this.total())}` : 'Continuar';
   }
 
@@ -271,25 +280,46 @@ export class BookingComponent implements OnInit {
 
   private pagar(reservaId: number, correo: string): void {
     this.http
-      .post<{ reserva: { id: number; codigo_qr: string } }>(`${API_URL}/reservas/${reservaId}/pago`, {
-        correo,
-        metodo: this.paymentMethod(),
-      })
+      .post(`${API_URL}/reservas/${reservaId}/pago`, { correo, metodo: this.paymentMethod() })
       .subscribe({
-        next: (pago) => {
-          const codigo = pago.reserva.codigo_qr;
-          const qr = qrcode(0, 'M');
-          qr.addData(codigo);
-          qr.make();
-          this.reservaId.set(pago.reserva.id);
-          this.codigo.set(codigo);
-          this.qrSrc.set(qr.createDataURL(6, 8));
-          this.procesando.set(false);
-          this.step.set('confirmation');
-        },
+        next: () => this.verificarPago(reservaId, correo),
         error: (err) => {
           this.procesando.set(false);
           this.error.set(err?.error?.message ?? 'No pudimos registrar el pago. Intentá de nuevo.');
+        },
+      });
+  }
+
+  // Antes de confirmar la compra se vuelve a consultar la reserva: tiene que figurar
+  // pagada, con un pago aprobado y su codigo QR emitido.
+  private verificarPago(reservaId: number, correo: string): void {
+    this.http
+      .get<ReservaVerificada>(`${API_URL}/reservas/${reservaId}`, { params: { correo } })
+      .subscribe({
+        next: (reserva) => {
+          const aprobado = reserva.pagos?.some((p) => p.estado === 'aprobado');
+          if (reserva.estado !== 'pagada' || !aprobado || !reserva.codigo_qr) {
+            this.procesando.set(false);
+            this.error.set(
+              `No pudimos confirmar el pago de la reserva Nº ${reservaId}. Si te lo descontaron, escribinos con ese número.`,
+            );
+            return;
+          }
+          const qr = qrcode(0, 'M');
+          qr.addData(reserva.codigo_qr);
+          qr.make();
+          this.reservaId.set(reserva.id);
+          this.codigo.set(reserva.codigo_qr);
+          this.qrSrc.set(qr.createDataURL(6, 8));
+          this.comprobanteEnviado.set(!!reserva.comprobante_enviado_en);
+          this.procesando.set(false);
+          this.step.set('confirmation');
+        },
+        error: () => {
+          this.procesando.set(false);
+          this.error.set(
+            `No pudimos verificar el pago de la reserva Nº ${reservaId}. No lo repitas: escribinos con ese número.`,
+          );
         },
       });
   }

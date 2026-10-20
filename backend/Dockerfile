@@ -5,8 +5,8 @@ RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
 
 FROM php:8.4-cli-bookworm
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev \
-    && docker-php-ext-install pdo_pgsql \
+    && apt-get install -y --no-install-recommends libpq-dev libpng-dev \
+    && docker-php-ext-install pdo_pgsql gd \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
