@@ -22,7 +22,7 @@ class CompraNotifier
             return false;
         }
 
-        $reserva->load(['funcion.pelicula', 'funcion.sala', 'funcion.formato', 'reservaAsientos.asiento']);
+        $reserva->load(['funcion.pelicula', 'funcion.sala', 'funcion.formato', 'reservaAsientos.asiento', 'descuentoGenerado']);
         $funcion = $reserva->funcion;
         $butacas = $reserva->reservaAsientos->map(fn ($ra) => $ra->asiento->fila.$ra->asiento->numero)->sort()->values();
         // APP_URL (no el host del request): detras de Caddy el host que ve Laravel es interno.
@@ -31,13 +31,16 @@ class CompraNotifier
         $fecha = $momento->format('d/m/Y');
         $hora = $momento->format('H:i');
 
+        $descuento = $reserva->descuentoGenerado;
+
         $mensaje = "Hola {$reserva->invitado_nombre}! Tu compra en Cine Concordia está confirmada.\n"
             ."Película: {$funcion->pelicula->titulo}\n"
             ."Función: {$fecha} {$hora} · {$funcion->sala->nombre} · {$funcion->formato->nombre}\n"
             .'Butacas: '.$butacas->implode(', ')."\n"
             .'Total: $'.number_format((float) $reserva->total, 0, ',', '.')."\n"
             ."Reserva Nº {$reserva->id}\n"
-            .'Presentá el código QR en la entrada del cine.';
+            .'Presentá el código QR en la entrada del cine.'
+            .($descuento ? "\n\nTu regalo: {$descuento->porcentaje}% de descuento en tu próxima compra con el código {$descuento->codigo} (válido hasta ".$descuento->vence_en->format('d/m/Y').'). Canjealo en la web al pagar.' : '');
 
         try {
             Http::timeout(15)->post($webhook, [
@@ -61,6 +64,11 @@ class CompraNotifier
                     'idioma' => $funcion->idioma,
                 ],
                 'butacas' => $butacas->all(),
+                'descuento' => $descuento ? [
+                    'codigo' => $descuento->codigo,
+                    'porcentaje' => $descuento->porcentaje,
+                    'vence' => $descuento->vence_en->format('d/m/Y'),
+                ] : null,
                 'qr_url' => $qrUrl,
                 'mensaje' => $mensaje,
             ])->throw();

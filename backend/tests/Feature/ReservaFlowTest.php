@@ -231,4 +231,46 @@ class ReservaFlowTest extends TestCase
             ->assertJsonPath('reserva.estado', 'pagada')
             ->assertJsonPath('reserva.comprobante_enviado_en', null);
     }
+
+    public function test_cada_compra_regala_un_descuento_que_se_canjea_una_sola_vez_y_solo_con_ese_correo(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asientos = Asiento::where('sala_id', $funcion->sala_id)->get();
+
+        $r1 = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asientos[0]->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+        ])->json('id');
+        $this->postJson("/api/reservas/{$r1}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])->assertCreated();
+
+        $regalo = $this->getJson("/api/reservas/{$r1}?correo=ana@test.com")->json('descuento_generado');
+        $this->assertSame(10, $regalo['porcentaje']);
+
+        // Otro correo no puede usarlo
+        $this->postJson('/api/descuentos/validar', ['codigo' => $regalo['codigo'], 'correo' => 'otro@test.com'])->assertUnprocessable();
+        $this->postJson('/api/descuentos/validar', ['codigo' => strtolower($regalo['codigo']), 'correo' => 'ana@test.com'])
+            ->assertOk()->assertJsonPath('porcentaje', 10);
+
+        // La reserva con descuento cobra 10% menos (1000 -> 900)
+        $conDescuento = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asientos[1]->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+            'codigo_descuento' => $regalo['codigo'],
+        ])->assertCreated();
+        $this->assertEquals(900, $conDescuento->json('total'));
+        $r2 = $conDescuento->json('id');
+
+        // Una segunda reserva con el mismo codigo se arma, pero solo una puede pagarse
+        $r3 = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asientos[2]->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+            'codigo_descuento' => $regalo['codigo'],
+        ])->assertCreated()->json('id');
+
+        $this->postJson("/api/reservas/{$r2}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])->assertCreated();
+        $this->postJson("/api/reservas/{$r3}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])->assertUnprocessable();
+
+        $this->postJson('/api/descuentos/validar', ['codigo' => $regalo['codigo'], 'correo' => 'ana@test.com'])
+            ->assertUnprocessable()->assertJsonPath('message', 'Ese código ya fue usado.');
+    }
 }

@@ -8,6 +8,7 @@ use App\Models\Cliente;
 use App\Models\Funcion;
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
+use App\Services\DescuentoService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -66,7 +67,7 @@ class ReservaController extends Controller
             new OA\Response(response: 422, description: 'Datos invalidos, funcion cancelada o butacas de otra sala.'),
         ]
     )]
-    public function store(Request $request)
+    public function store(Request $request, DescuentoService $descuentos)
     {
         $data = $request->validate([
             'funcion_id' => ['required', 'integer', 'exists:funciones,id'],
@@ -76,6 +77,7 @@ class ReservaController extends Controller
             'invitado_correo' => ['required', 'email', 'max:255'],
             'invitado_telefono' => ['nullable', 'string', 'max:30'],
             'acepta_marketing' => ['nullable', 'boolean'],
+            'codigo_descuento' => ['nullable', 'string', 'max:20'],
         ]);
 
         $funcion = Funcion::findOrFail($data['funcion_id']);
@@ -96,8 +98,20 @@ class ReservaController extends Controller
             return response()->json(['message' => 'Hay butacas que no estan disponibles para la venta.'], 422);
         }
 
+        $descuento = null;
+        if (! empty($data['codigo_descuento'])) {
+            $descuento = $descuentos->validar($data['codigo_descuento'], $data['invitado_correo']);
+
+            if (is_string($descuento)) {
+                return response()->json(['message' => $descuento], 422);
+            }
+        }
+
+        $subtotal = $funcion->precio_base * $asientos->count();
+        $descuentoMonto = $descuento ? round($subtotal * $descuento->porcentaje / 100, 2) : 0;
+
         try {
-            $reserva = DB::transaction(function () use ($data, $funcion, $asientos) {
+            $reserva = DB::transaction(function () use ($data, $funcion, $asientos, $descuento, $descuentoMonto, $subtotal) {
                 // Contacto para campañas: un registro por correo, siempre con los datos mas recientes.
                 $cliente = Cliente::firstOrNew(['correo' => strtolower($data['invitado_correo'])]);
                 $cliente->nombre = $data['invitado_nombre'];
@@ -112,7 +126,9 @@ class ReservaController extends Controller
                     'invitado_nombre' => $data['invitado_nombre'],
                     'invitado_correo' => $data['invitado_correo'],
                     'invitado_telefono' => $data['invitado_telefono'] ?? null,
-                    'total' => $funcion->precio_base * $asientos->count(),
+                    'total' => $subtotal - $descuentoMonto,
+                    'descuento_id' => $descuento?->id,
+                    'descuento_monto' => $descuentoMonto,
                     'estado' => 'pendiente',
                 ]);
 
@@ -191,7 +207,7 @@ class ReservaController extends Controller
 
         abort_unless(strcasecmp($reserva->invitado_correo, $data['correo']) === 0, 403);
 
-        return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos']);
+        return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos', 'descuentoGenerado']);
     }
 
     // Cancelacion manual: la dispara el timer del front cuando se vence el

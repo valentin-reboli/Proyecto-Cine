@@ -164,6 +164,29 @@
                   </button>
                 }
               </div>
+              <div class="codigo-descuento">
+                <label class="codigo-label">¿Tenés un código de descuento?</label>
+                @if (descuento(); as d) {
+                  <p class="codigo-ok">
+                    Código {{ d.codigo }} aplicado: {{ d.porcentaje }}% de descuento
+                    <a class="edit-link" (click)="quitarCodigo()">Quitar</a>
+                  </p>
+                } @else {
+                  <div class="codigo-row">
+                    <input
+                      name="codigo"
+                      placeholder="CINE-XXXXXX"
+                      autocomplete="off"
+                      [(ngModel)]="codigoInput"
+                      (keyup.enter)="aplicarCodigo()"
+                    />
+                    <button type="button" class="btn" [disabled]="validandoCodigo() || !codigoInput.trim()" (click)="aplicarCodigo()">
+                      {{ validandoCodigo() ? 'Validando…' : 'Aplicar' }}
+                    </button>
+                  </div>
+                  @if (errorCodigo()) { <span class="form-error">{{ errorCodigo() }}</span> }
+                }
+              </div>
               <div class="secure-note">
                 <span class="checkbox-icon"></span>Tus butacas quedan reservadas 10 minutos · Recibís tus
                 entradas por email
@@ -187,6 +210,13 @@
                 <img [src]="qrSrc()" alt="Código QR de tu entrada" class="qr-img" />
               }
               <div class="order-number">{{ codigo() }}</div>
+              @if (regalo(); as r) {
+                <div class="regalo-box">
+                  <strong>🎁 Tu regalo: {{ r.porcentaje }}% de descuento en tu próxima compra</strong>
+                  <span class="regalo-codigo">{{ r.codigo }}</span>
+                  <span>Válido hasta el {{ fechaCorta(r.vence_en) }}. Ingresalo en el paso de pago al comprar (con este mismo correo).</span>
+                </div>
+              }
               <button class="btn btn-primary btn-lg" (click)="reset()">Volver al inicio</button>
             </div>
           }
@@ -240,6 +270,11 @@
               <div class="sidebar-row">
                 <span>Entradas</span><span>{{ selectedSeats().length }} × {{ formatPrice(price()) }}</span>
               </div>
+              @if (descuento(); as d) {
+                <div class="sidebar-row">
+                  <span>Descuento {{ d.porcentaje }}%</span><span>-{{ formatPrice(descuentoMonto()) }}</span>
+                </div>
+              }
             </div>
             <div class="sidebar-total">
               <span>Total</span>

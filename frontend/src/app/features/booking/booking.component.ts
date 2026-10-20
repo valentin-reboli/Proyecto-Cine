@@ -19,11 +19,18 @@ interface ApiAsiento {
   estado: 'disponible' | 'temporal' | 'ocupado' | 'bloqueado';
 }
 
+interface DescuentoRegalo {
+  codigo: string;
+  porcentaje: number;
+  vence_en: string;
+}
+
 interface ReservaVerificada {
   id: number;
   estado: string;
   codigo_qr: string | null;
   comprobante_enviado_en: string | null;
+  descuento_generado?: DescuentoRegalo | null;
   pagos?: { estado: string }[];
 }
 
@@ -86,6 +93,13 @@ export class BookingComponent implements OnInit {
   readonly qrSrc = signal<string | null>(null);
   readonly comprobanteEnviado = signal(false);
 
+  // Codigo de descuento (el que se regala con la compra anterior)
+  readonly descuento = signal<{ codigo: string; porcentaje: number } | null>(null);
+  readonly validandoCodigo = signal(false);
+  readonly errorCodigo = signal('');
+  readonly regalo = signal<DescuentoRegalo | null>(null);
+  codigoInput = '';
+
   datos = { nombre: '', correo: '', telefono: '', acepta_marketing: false };
 
   // Funciones programadas de la pelicula (las que ya pasaron no se muestran), agrupadas por dia.
@@ -105,7 +119,12 @@ export class BookingComponent implements OnInit {
   });
 
   readonly price = computed(() => this.selection()?.showtime?.price ?? 0);
-  readonly total = computed(() => this.price() * this.selectedSeats().length);
+  readonly subtotal = computed(() => this.price() * this.selectedSeats().length);
+  readonly descuentoMonto = computed(() => {
+    const d = this.descuento();
+    return d ? Math.round((this.subtotal() * d.porcentaje) / 100) : 0;
+  });
+  readonly total = computed(() => this.subtotal() - this.descuentoMonto());
 
   readonly progressSteps = computed((): ProgressStep[] => {
     const step = this.step();
@@ -139,6 +158,11 @@ export class BookingComponent implements OnInit {
 
   formatPrice(amount: number): string {
     return this.catalog.formatPrice(amount);
+  }
+
+  fechaCorta(iso: string): string {
+    const [y, m, d] = iso.slice(0, 10).split('-');
+    return `${d}/${m}/${y}`;
   }
 
   fechaLabel(f: Showtime): string {
@@ -241,6 +265,34 @@ export class BookingComponent implements OnInit {
     this.step.set(step);
   }
 
+  aplicarCodigo(): void {
+    const codigo = this.codigoInput.trim();
+    if (!codigo) return;
+    this.validandoCodigo.set(true);
+    this.errorCodigo.set('');
+    this.http
+      .post<{ codigo: string; porcentaje: number }>(`${API_URL}/descuentos/validar`, {
+        codigo,
+        correo: this.datos.correo.trim(),
+      })
+      .subscribe({
+        next: (d) => {
+          this.descuento.set(d);
+          this.validandoCodigo.set(false);
+        },
+        error: (err) => {
+          this.errorCodigo.set(err?.error?.message ?? 'No pudimos validar el código.');
+          this.validandoCodigo.set(false);
+        },
+      });
+  }
+
+  quitarCodigo(): void {
+    this.descuento.set(null);
+    this.codigoInput = '';
+    this.errorCodigo.set('');
+  }
+
   setPaymentMethod(method: PaymentMethodKey): void {
     this.paymentMethod.set(method);
   }
@@ -262,6 +314,7 @@ export class BookingComponent implements OnInit {
         invitado_correo: correo,
         invitado_telefono: this.datos.telefono.trim(),
         acepta_marketing: this.datos.acepta_marketing,
+        codigo_descuento: this.descuento()?.codigo ?? null,
       })
       .subscribe({
         next: (reserva) => this.pagar(reserva.id, correo),
@@ -312,6 +365,7 @@ export class BookingComponent implements OnInit {
           this.codigo.set(reserva.codigo_qr);
           this.qrSrc.set(qr.createDataURL(6, 8));
           this.comprobanteEnviado.set(!!reserva.comprobante_enviado_en);
+          this.regalo.set(reserva.descuento_generado ?? null);
           this.procesando.set(false);
           this.step.set('confirmation');
         },

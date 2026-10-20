@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaniaController;
 use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\DescuentoController;
 use App\Http\Controllers\Api\EntradaController;
 use App\Http\Controllers\Api\EstadoController;
 use App\Http\Controllers\Api\FormatoController;
@@ -40,6 +41,7 @@ Route::get('/entradas/qr/{codigo}.png', [QrController::class, 'show']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::get('/reservas', [ReservaController::class, 'index']);
+Route::post('/descuentos/validar', [DescuentoController::class, 'validar'])->middleware('throttle:20,1');
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
 Route::post('/reservas/{reserva}/cancelar', [ReservaController::class, 'cancelar']);

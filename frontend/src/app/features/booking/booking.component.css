@@ -15,3 +15,15 @@
 .pelicula-title { padding: 0 10px; font-weight: 600; font-size: 14px; }
 .pelicula-meta { padding: 0 10px 10px; font-size: 11px; color: var(--text-secondary); }
 .funcion-dia { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-light); }
+.codigo-descuento { margin: 22px 0 8px; max-width: 420px; }
+.codigo-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.codigo-row { display: flex; gap: 10px; }
+.codigo-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); padding: 12px 14px; border-radius: var(--radius-md); font-family: var(--font-body); text-transform: uppercase; }
+.codigo-ok { color: #6fcf97; font-size: 14px; margin: 0; }
+.regalo-box { display: flex; flex-direction: column; gap: 6px; align-items: center; margin: 22px auto; padding: 18px; max-width: 420px; border: 1px dashed var(--accent); border-radius: var(--radius-md); text-align: center; font-size: 13px; color: var(--text-secondary); }
+.regalo-codigo { font-family: var(--font-display); font-size: 26px; letter-spacing: 0.08em; color: var(--text-primary); user-select: all; }
+@media (max-width: 600px) {
+  /* En el celular las funciones van en una sola fila que se desliza hacia el costado. */
+  .funcion-list { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
+  .funcion-btn { flex: 0 0 auto; }
+}

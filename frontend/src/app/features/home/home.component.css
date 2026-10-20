@@ -37,3 +37,7 @@
 .detalle-comprar { margin-top: 22px; }
 .coming-soon-card { cursor: pointer; }
 .detalle-chip-dia { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-light) !important; }
+@media (max-width: 600px) {
+  .detalle-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
+  .detalle-chip { flex: 0 0 auto; }
+}

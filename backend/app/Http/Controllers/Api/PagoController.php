@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Descuento;
 use App\Models\Pago;
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
 use App\Services\CompraNotifier;
+use App\Services\DescuentoService;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -42,7 +45,7 @@ class PagoController extends Controller
             new OA\Response(response: 422, description: 'La reserva no esta pendiente de pago.'),
         ]
     )]
-    public function store(Request $request, Reserva $reserva, CompraNotifier $notificador)
+    public function store(Request $request, Reserva $reserva, CompraNotifier $notificador, DescuentoService $descuentos)
     {
         $data = $request->validate([
             'correo' => ['required', 'email'],
@@ -71,6 +74,19 @@ class PagoController extends Controller
         }
 
         $pago = DB::transaction(function () use ($request, $reserva, $data) {
+            // El codigo de descuento se consume recien al pagar (y una sola vez).
+            if ($reserva->descuento_id) {
+                $consumido = Descuento::where('id', $reserva->descuento_id)
+                    ->whereNull('usado_en')
+                    ->update(['usado_en' => now()]);
+
+                if ($consumido !== 1) {
+                    throw new HttpResponseException(response()->json([
+                        'message' => 'El código de descuento ya fue usado. Hacé una reserva nueva sin ese código.',
+                    ], 422));
+                }
+            }
+
             $reserva->update([
                 'estado' => 'pagada',
                 'codigo_qr' => (string) Str::uuid(),
@@ -90,7 +106,8 @@ class PagoController extends Controller
             ]);
         });
 
-        // Comprobante y QR por mensaje (n8n). Si falla, la compra igual esta confirmada.
+        // Descuento de regalo para la proxima compra + comprobante y QR por mensaje (n8n).
+        $descuentos->generarPara($reserva);
         $notificador->enviar($reserva->fresh());
 
         return response()->json(

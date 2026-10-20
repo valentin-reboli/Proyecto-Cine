@@ -17,6 +17,8 @@ class Reserva extends Model
         'codigo_qr',
         'usada_en',
         'comprobante_enviado_en',
+        'descuento_id',
+        'descuento_monto',
     ];
 
     protected $casts = [
@@ -32,6 +34,11 @@ class Reserva extends Model
     public function funcion()
     {
         return $this->belongsTo(Funcion::class);
+    }
+
+    public function descuentoGenerado()
+    {
+        return $this->hasOne(Descuento::class, 'reserva_origen_id');
     }
 
     public function reservaAsientos()
