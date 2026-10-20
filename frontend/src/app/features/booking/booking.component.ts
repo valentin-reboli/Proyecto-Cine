@@ -7,6 +7,7 @@ import { API_URL } from '../../core/services/api.config';
 import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
 import { Showtime } from '../../core/models/movie.model';
+import { Dia, agruparPorDia } from '../../core/utils/funciones';
 
 type Step = 'funcion' | 'seats' | 'datos' | 'payment' | 'confirmation';
 type PaymentMethodKey = 'tarjeta' | 'mercadopago';
@@ -29,12 +30,6 @@ interface ProgressStep {
   labelColor: string;
 }
 
-interface Dia {
-  fecha: string;
-  label: string;
-  funciones: Showtime[];
-}
-
 const MAX_SEATS = 8;
 const STEP_ORDER: Step[] = ['funcion', 'seats', 'datos', 'payment'];
 const STEP_LABELS: Record<Step, string> = {
@@ -44,14 +39,6 @@ const STEP_LABELS: Record<Step, string> = {
   payment: 'Pago',
   confirmation: 'Confirmación',
 };
-const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
-function ahoraLocal(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 @Component({
   selector: 'app-booking',
   imports: [FormsModule],
@@ -86,21 +73,7 @@ export class BookingComponent implements OnInit {
   datos = { nombre: '', correo: '', telefono: '', acepta_marketing: false };
 
   // Funciones programadas de la pelicula (las que ya pasaron no se muestran), agrupadas por dia.
-  readonly dias = computed((): Dia[] => {
-    const sel = this.selection();
-    if (!sel) return [];
-    const ahora = ahoraLocal();
-    const porDia = new Map<string, Showtime[]>();
-    [...sel.movie.todayTimes]
-      .filter((f) => f.funcionId && `${f.date} ${f.time}` >= ahora)
-      .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
-      .forEach((f) => porDia.set(f.date!, [...(porDia.get(f.date!) ?? []), f]));
-    return [...porDia.entries()].map(([fecha, funciones]) => {
-      const [y, m, d] = fecha.split('-').map(Number);
-      const dia = DIAS[new Date(y, m - 1, d).getDay()];
-      return { fecha, label: `${dia} ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`, funciones };
-    });
-  });
+  readonly dias = computed((): Dia[] => agruparPorDia(this.selection()?.movie.todayTimes ?? []));
 
   readonly seatRows = computed(() => {
     const porFila = new Map<string, ApiAsiento[]>();
@@ -140,8 +113,13 @@ export class BookingComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    if (!this.selection()) {
+    const sel = this.selection();
+    if (!sel) {
       this.router.navigateByUrl('/');
+    } else if (sel.showtime?.funcionId) {
+      // Vino desde la ficha de la pelicula con la funcion ya elegida.
+      this.cargarAsientos(sel.showtime);
+      this.step.set('seats');
     }
   }
 

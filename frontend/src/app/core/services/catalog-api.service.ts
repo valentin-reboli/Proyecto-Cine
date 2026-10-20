@@ -42,6 +42,7 @@ export function mapToMovie(p: ApiPelicula): Movie {
     todayTimes: funciones.map(mapToShowtime),
     synopsis: p.sinopsis ?? undefined,
     backdrop: p.backdrop_url ?? undefined,
+    trailer: p.trailer_url ?? undefined,
   };
 }
 

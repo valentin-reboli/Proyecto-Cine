@@ -10,15 +10,18 @@
 </header>
 
 @if (heroMovie(); as hero) {
-<section class="hero">
-  <div
-    class="hero-media"
-    [style.background-image]="'url(' + (hero.backdrop || hero.poster) + ')'"
-    style="background-size: cover; background-position: center"
-  ></div>
+<section class="hero" (mouseenter)="pausarHero(true)" (mouseleave)="pausarHero(false)">
+  @for (m of heroMovies(); track m.id; let i = $index) {
+    <div
+      class="hero-media hero-slide"
+      [class.active]="m.id === hero.id"
+      [style.background-image]="'url(' + (m.backdrop || m.poster) + ')'"
+      style="background-size: cover; background-position: center"
+    ></div>
+  }
   <div class="hero-scrim-v"></div>
   <div class="hero-scrim-h"></div>
-  <div class="hero-content">
+  <div class="hero-content" [attr.data-id]="hero.id">
     <div class="eyebrow">En cartelera ahora</div>
     <h1 class="hero-title">{{ hero.title }}</h1>
     <div class="meta-row">
@@ -45,8 +48,23 @@
       <button class="btn btn-primary btn-lg" (click)="openHeroMovie()">
         Comprar entradas
       </button>
-      <a [href]="'#movie-' + hero.id" class="btn-link">Ver en cartelera</a>
+      <button class="btn-link" (click)="verDetalle(hero)">Más información</button>
     </div>
+    @if (heroMovies().length > 1) {
+      <div class="hero-nav">
+        <button type="button" class="hero-arrow" aria-label="Anterior" (click)="anteriorHero()">‹</button>
+        @for (m of heroMovies(); track m.id; let i = $index) {
+          <button
+            type="button"
+            class="hero-dot"
+            [class.active]="m.id === hero.id"
+            [attr.aria-label]="m.title"
+            (click)="irAHero(i)"
+          ></button>
+        }
+        <button type="button" class="hero-arrow" aria-label="Siguiente" (click)="siguienteHero()">›</button>
+      </div>
+    }
   </div>
 </section>
 }
@@ -85,7 +103,7 @@
       <div
         class="movie-card"
         [id]="'movie-' + movie.id"
-        (click)="openMovie(movie)"
+        (click)="verDetalle(movie)"
       >
         <div
           class="movie-poster"
@@ -189,3 +207,63 @@
   <div class="logo logo-sm">CINE<span class="accent">CONCORDIA</span></div>
   <p>© 2026 Cine Concordia. Todos los derechos reservados.</p>
 </footer>
+
+@if (detalle(); as m) {
+  <div class="detalle-backdrop" (click)="cerrarDetalle()">
+    <div class="detalle" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <button type="button" class="detalle-cerrar" aria-label="Cerrar" (click)="cerrarDetalle()">×</button>
+
+      <div class="detalle-top">
+        <div
+          class="detalle-poster"
+          [style.background-image]="'url(' + m.poster + ')'"
+          style="background-size: cover; background-position: center"
+        ></div>
+        <div class="detalle-info">
+          <h2>{{ m.title }}</h2>
+          <div class="meta-row">
+            <span>{{ m.genre }}</span><span class="dot">·</span><span>{{ m.duration }} min</span>
+            <span class="dot">·</span><span class="tag tag-outline">{{ m.rating }}</span>
+            @for (format of m.formats; track format) {
+              <span class="tag">{{ format }}</span>
+            }
+          </div>
+          <p class="detalle-sinopsis">{{ m.synopsis || 'Sinopsis no disponible.' }}</p>
+          @if (trailerLink(); as link) {
+            <a [href]="link" target="_blank" rel="noopener" class="btn-link">▶ Ver trailer</a>
+          }
+        </div>
+      </div>
+
+      @if (trailerUrl(); as trailer) {
+        <div class="detalle-trailer">
+          <iframe
+            [src]="trailer"
+            title="Trailer de {{ m.title }}"
+            allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+      }
+
+      <h3 class="detalle-funciones-title">Funciones</h3>
+      @if (detalleDias().length === 0) {
+        <p class="detalle-vacio">Todavía no hay funciones programadas.</p>
+      }
+      @for (dia of detalleDias(); track dia.fecha) {
+        <div class="detalle-dia">
+          <span class="detalle-dia-label">{{ dia.label }}</span>
+          <div class="detalle-chips">
+            @for (f of dia.funciones; track f.funcionId) {
+              <button type="button" class="detalle-chip" (click)="comprarFuncion(m, f)">
+                <strong>{{ f.time }}</strong>
+                <span>{{ f.format }} · {{ langLabel(f) }}</span>
+                <span>{{ formatPrice(f.price ?? 0) }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

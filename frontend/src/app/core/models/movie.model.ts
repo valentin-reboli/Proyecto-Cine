@@ -25,6 +25,7 @@ export interface Movie {
   todayTimes: Showtime[];
   synopsis?: string;
   backdrop?: string;
+  trailer?: string;
 }
 
 export interface ComingSoonMovie {
