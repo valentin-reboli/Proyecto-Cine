@@ -398,3 +398,10 @@
     overflow-x: auto;
   }
 }
+
+/* Mapa de butacas de una sala (modal de Funciones y salas) */
+.butacas-grid { display: flex; flex-direction: column; gap: 6px; margin: 16px 0; overflow-x: auto; }
+.butacas-fila { display: flex; gap: 6px; align-items: center; }
+.butacas-label { width: 20px; color: var(--text-muted); font-size: 12px; }
+.butaca { min-width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-primary); cursor: pointer; font-size: 12px; }
+.butaca-bloqueada { background: #7a1f1f; border-color: #c0392b; color: #fff; text-decoration: line-through; }

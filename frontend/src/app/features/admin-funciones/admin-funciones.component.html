@@ -1,0 +1,257 @@
+<div class="admin-page">
+  <header class="site-header">
+    <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+    <nav class="main-nav">
+      <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
+      <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
+      <a routerLink="/admin/campanias" routerLinkActive="activo">Campañas</a>
+      <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
+      <a routerLink="/">Ver sitio</a>
+    </nav>
+    <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-toolbar">
+      <div>
+        <p class="eyebrow">Panel de administrador</p>
+        <h1>Funciones y salas</h1>
+      </div>
+    </div>
+
+    @if (aviso()) { <p class="admin-aviso">{{ aviso() }}</p> }
+    @if (error()) { <p class="admin-error">{{ error() }}</p> }
+
+    <div class="admin-filtros">
+      <button type="button" class="btn" [class.btn-primary]="tab() === 'funciones'" (click)="tab.set('funciones')">Funciones</button>
+      <button type="button" class="btn" [class.btn-primary]="tab() === 'salas'" (click)="tab.set('salas')">Salas y butacas</button>
+      <button type="button" class="btn" [class.btn-primary]="tab() === 'formatos'" (click)="tab.set('formatos')">Formatos</button>
+    </div>
+
+    @if (cargando()) {
+      <p class="admin-loading">Cargando…</p>
+    } @else {
+      @if (tab() === 'funciones') {
+        <section class="admin-section">
+          <div class="admin-section-head">
+            <h2>Funciones <span class="admin-count">({{ funcionesVisibles().length }})</span></h2>
+            <button type="button" class="btn btn-primary" (click)="abrirNuevaFuncion()">+ Nueva función</button>
+          </div>
+
+          <div class="admin-filtros">
+            <select [ngModel]="filtroPelicula()" (ngModelChange)="filtroPelicula.set($event)" class="admin-filtro-genero">
+              <option [ngValue]="0">Todas las películas</option>
+              @for (p of peliculas(); track p.id) {
+                <option [ngValue]="p.id">{{ p.titulo }}</option>
+              }
+            </select>
+            <label class="remember">
+              <input type="checkbox" [ngModel]="mostrarCanceladas()" (ngModelChange)="mostrarCanceladas.set($event)" />
+              Ver canceladas
+            </label>
+          </div>
+
+          @if (funcionesVisibles().length === 0) {
+            <p class="admin-empty">No hay funciones cargadas.</p>
+          } @else {
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Película</th>
+                  <th>Fecha</th>
+                  <th>Horario</th>
+                  <th>Sala</th>
+                  <th>Formato</th>
+                  <th>Idioma</th>
+                  <th>Precio</th>
+                  <th class="col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (f of funcionesVisibles(); track f.id) {
+                  <tr>
+                    <td><span class="admin-titulo">{{ f.pelicula?.titulo }}</span>@if (f.cancelada) { <em> · cancelada</em> }</td>
+                    <td>{{ fecha(f) }}</td>
+                    <td>{{ hora(f) }}</td>
+                    <td>{{ f.sala?.nombre }}</td>
+                    <td>{{ f.formato?.nombre }}</td>
+                    <td>{{ idiomaLabel(f.idioma) }}</td>
+                    <td>${{ f.precio_base }}</td>
+                    <td class="col-acciones">
+                      @if (!f.cancelada) {
+                        <button type="button" class="btn-link" (click)="abrirEdicionFuncion(f)">Editar</button>
+                        <button type="button" class="admin-btn-danger" (click)="cancelarFuncion(f)">Cancelar</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+      }
+
+      @if (tab() === 'salas') {
+        <section class="admin-section">
+          <div class="admin-section-head"><h2>Salas <span class="admin-count">({{ salas().length }})</span></h2></div>
+
+          <form class="admin-form-row" (ngSubmit)="crearSala()">
+            <label class="field">
+              <span class="field-label">Nombre</span>
+              <input type="text" name="sala_nombre" placeholder="Sala D" [(ngModel)]="nuevaSala.nombre" />
+            </label>
+            <label class="field">
+              <span class="field-label">Filas</span>
+              <input type="number" name="sala_filas" min="1" max="26" [(ngModel)]="nuevaSala.filas" />
+            </label>
+            <label class="field">
+              <span class="field-label">Butacas por fila</span>
+              <input type="number" name="sala_butacas" min="1" max="30" [(ngModel)]="nuevaSala.butacas_por_fila" />
+            </label>
+            <button type="submit" class="btn btn-primary">+ Crear sala</button>
+          </form>
+
+          <table class="admin-table">
+            <thead><tr><th>Sala</th><th>Butacas</th><th class="col-acciones">Acciones</th></tr></thead>
+            <tbody>
+              @for (s of salas(); track s.id) {
+                <tr>
+                  <td><span class="admin-titulo">{{ s.nombre }}</span></td>
+                  <td>{{ s.asientos_count }}</td>
+                  <td class="col-acciones">
+                    <button type="button" class="btn-link" (click)="abrirButacas(s)">Ver / bloquear butacas</button>
+                    <button type="button" class="btn-link" (click)="renombrarSala(s)">Renombrar</button>
+                    <button type="button" class="admin-btn-danger" (click)="borrarSala(s)">Borrar</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      @if (tab() === 'formatos') {
+        <section class="admin-section">
+          <div class="admin-section-head"><h2>Formatos <span class="admin-count">({{ formatos().length }})</span></h2></div>
+
+          <form class="admin-form-row" (ngSubmit)="crearFormato()">
+            <label class="field">
+              <span class="field-label">Nuevo formato</span>
+              <input type="text" name="formato_nombre" placeholder="3D, 2D, ATMOS…" [(ngModel)]="nuevoFormato" />
+            </label>
+            <button type="submit" class="btn btn-primary">+ Agregar</button>
+          </form>
+
+          <table class="admin-table">
+            <thead><tr><th>Formato</th><th class="col-acciones">Acciones</th></tr></thead>
+            <tbody>
+              @for (f of formatos(); track f.id) {
+                <tr>
+                  <td><span class="admin-titulo">{{ f.nombre }}</span></td>
+                  <td class="col-acciones">
+                    <button type="button" class="btn-link" (click)="renombrarFormato(f)">Renombrar</button>
+                    <button type="button" class="admin-btn-danger" (click)="borrarFormato(f)">Borrar</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+    }
+  </main>
+
+  @if (mostrarFormFuncion()) {
+    <div class="admin-modal-backdrop" (click)="cerrarFormFuncion()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>{{ funcionEditandoId() ? 'Editar función' : 'Nueva función' }}</h2>
+        <form class="admin-form" (ngSubmit)="guardarFuncion()">
+          <label class="field">
+            <span class="field-label">Película *</span>
+            <select name="pelicula_id" [(ngModel)]="form.pelicula_id" [class.field-invalid]="errores()['pelicula_id']">
+              @for (p of peliculas(); track p.id) {
+                <option [ngValue]="p.id">{{ p.titulo }}</option>
+              }
+            </select>
+            @if (errores()['pelicula_id']) { <span class="field-error">{{ errores()['pelicula_id'] }}</span> }
+          </label>
+
+          <div class="admin-form-row">
+            <label class="field">
+              <span class="field-label">Fecha *</span>
+              <input type="date" name="fecha" [(ngModel)]="form.fecha" [class.field-invalid]="errores()['fecha']" />
+              @if (errores()['fecha']) { <span class="field-error">{{ errores()['fecha'] }}</span> }
+            </label>
+            <label class="field">
+              <span class="field-label">Horario *</span>
+              <input type="time" name="hora" [(ngModel)]="form.hora" [class.field-invalid]="errores()['hora']" />
+              @if (errores()['hora']) { <span class="field-error">{{ errores()['hora'] }}</span> }
+            </label>
+          </div>
+
+          <div class="admin-form-row">
+            <label class="field">
+              <span class="field-label">Sala *</span>
+              <select name="sala_id" [(ngModel)]="form.sala_id">
+                @for (s of salas(); track s.id) {
+                  <option [ngValue]="s.id">{{ s.nombre }}</option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">Formato *</span>
+              <select name="formato_id" [(ngModel)]="form.formato_id">
+                @for (f of formatos(); track f.id) {
+                  <option [ngValue]="f.id">{{ f.nombre }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <div class="admin-form-row">
+            <label class="field">
+              <span class="field-label">Idioma *</span>
+              <select name="idioma" [(ngModel)]="form.idioma">
+                @for (i of idiomas; track i.value) {
+                  <option [ngValue]="i.value">{{ i.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">Precio de la entrada ($) *</span>
+              <input type="number" name="precio_base" min="0" step="100" [(ngModel)]="form.precio_base" [class.field-invalid]="errores()['precio_base']" />
+              @if (errores()['precio_base']) { <span class="field-error">{{ errores()['precio_base'] }}</span> }
+            </label>
+          </div>
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarFormFuncion()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (salaButacas(); as sala) {
+    <div class="admin-modal-backdrop" (click)="cerrarButacas()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>{{ sala.nombre }} · butacas</h2>
+        <p class="admin-modal-sub">Tocá una butaca para sacarla de la venta (o volver a habilitarla). Bloqueadas: {{ bloqueadas() }}.</p>
+        <div class="butacas-grid">
+          @for (fila of filasButacas(); track fila.fila) {
+            <div class="butacas-fila">
+              <span class="butacas-label">{{ fila.fila }}</span>
+              @for (b of fila.butacas; track b.id) {
+                <button type="button" class="butaca" [class.butaca-bloqueada]="!b.activo" (click)="toggleButaca(b)">{{ b.numero }}</button>
+              }
+            </div>
+          }
+        </div>
+        <div class="admin-form-actions">
+          <button type="button" class="btn-back" (click)="cerrarButacas()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
