@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaniaController;
 use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\ComboController;
 use App\Http\Controllers\Api\DescuentoController;
 use App\Http\Controllers\Api\EntradaController;
 use App\Http\Controllers\Api\EstadoController;
@@ -37,6 +38,7 @@ Route::get('/funciones/{funcion}/asientos', [FuncionController::class, 'asientos
 Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/salas', [SalaController::class, 'index']);
 Route::get('/formatos', [FormatoController::class, 'index']);
+Route::get('/combos', [ComboController::class, 'index']);
 Route::get('/entradas/qr/{codigo}.png', [QrController::class, 'show']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
@@ -74,6 +76,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/reservas', [ReservaController::class, 'admin']);
 
     Route::post('/entradas/validar', [EntradaController::class, 'validar']);
+    Route::get('/admin/combos', [ComboController::class, 'admin']);
+    Route::post('/combos', [ComboController::class, 'store']);
+    Route::put('/combos/{combo}', [ComboController::class, 'update']);
+    Route::delete('/combos/{combo}', [ComboController::class, 'destroy']);
+
     Route::get('/clientes', [ClienteController::class, 'index']);
     Route::get('/campanias', [CampaniaController::class, 'index']);
     Route::post('/campanias', [CampaniaController::class, 'store']);

@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import qrcode from 'qrcode-generator';
 import { API_URL } from '../../core/services/api.config';
+import { ComboService } from '../../core/services/combo.service';
+import { Combo } from '../../core/models/combo.model';
 import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
 import { Movie, Showtime } from '../../core/models/movie.model';
 import { Dia, agruparPorDia } from '../../core/utils/funciones';
 
-type Step = 'pelicula' | 'funcion' | 'seats' | 'datos' | 'payment' | 'confirmation';
+type Step = 'pelicula' | 'funcion' | 'seats' | 'combos' | 'datos' | 'payment' | 'confirmation';
 type PaymentMethodKey = 'tarjeta' | 'mercadopago';
 
 interface ApiAsiento {
@@ -46,11 +48,12 @@ interface ProgressStep {
 }
 
 const MAX_SEATS = 8;
-const STEP_ORDER: Step[] = ['pelicula', 'funcion', 'seats', 'datos', 'payment'];
+const STEP_ORDER: Step[] = ['pelicula', 'funcion', 'seats', 'combos', 'datos', 'payment'];
 const STEP_LABELS: Record<Step, string> = {
   pelicula: 'Película',
   funcion: 'Función',
   seats: 'Butacas',
+  combos: 'Combos',
   datos: 'Tus datos',
   payment: 'Pago',
   confirmation: 'Confirmación',
@@ -66,6 +69,7 @@ export class BookingComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly bookingState = inject(BookingStateService);
   private readonly catalog = inject(CatalogService);
+  private readonly comboService = inject(ComboService);
 
   readonly selection = this.bookingState.selection;
 
@@ -119,17 +123,38 @@ export class BookingComponent implements OnInit {
   });
 
   readonly price = computed(() => this.selection()?.showtime?.price ?? 0);
+  // Combos / snacks
+  readonly combosDisponibles = signal<Combo[]>([]);
+  readonly cantidades = signal<Record<number, number>>({});
+  readonly combosElegidos = computed(() =>
+    this.combosDisponibles()
+      .map((c) => ({ combo: c, cantidad: this.cantidades()[c.id] ?? 0 }))
+      .filter((x) => x.cantidad > 0),
+  );
+  readonly combosTotal = computed(() =>
+    this.combosElegidos().reduce((sum, x) => sum + Number(x.combo.precio) * x.cantidad, 0),
+  );
+  readonly combosCantidad = computed(() => this.combosElegidos().reduce((sum, x) => sum + x.cantidad, 0));
+
+  // Entradas (con el descuento, que aplica solo a las entradas)
   readonly subtotal = computed(() => this.price() * this.selectedSeats().length);
   readonly descuentoMonto = computed(() => {
     const d = this.descuento();
     return d ? Math.round((this.subtotal() * d.porcentaje) / 100) : 0;
   });
-  readonly total = computed(() => this.subtotal() - this.descuentoMonto());
+  readonly entradasTotal = computed(() => this.subtotal() - this.descuentoMonto());
+  readonly total = computed(() => this.entradasTotal() + this.combosTotal());
+
+  // Si no hay combos activos, el paso de combos no aparece.
+  readonly pasos = computed((): Step[] =>
+    this.combosDisponibles().length ? STEP_ORDER : STEP_ORDER.filter((s) => s !== 'combos'),
+  );
 
   readonly progressSteps = computed((): ProgressStep[] => {
     const step = this.step();
-    const currentIdx = step === 'confirmation' ? STEP_ORDER.length : STEP_ORDER.indexOf(step);
-    const all: Step[] = [...STEP_ORDER, 'confirmation'];
+    const pasos = this.pasos();
+    const currentIdx = step === 'confirmation' ? pasos.length : pasos.indexOf(step);
+    const all: Step[] = [...pasos, 'confirmation'];
     return all.map((key, i) => {
       const done = i < currentIdx || step === 'confirmation';
       const current = key === step;
@@ -150,6 +175,7 @@ export class BookingComponent implements OnInit {
   ngOnInit(): void {
     // Siempre se arranca eligiendo la pelicula.
     this.bookingState.clear();
+    this.comboService.listActivos().subscribe({ next: (c) => this.combosDisponibles.set(c), error: () => {} });
   }
 
   langLabel(f: Showtime): string {
@@ -184,6 +210,7 @@ export class BookingComponent implements OnInit {
     if (!sel) return;
     this.bookingState.select(sel.movie, f);
     this.selectedSeats.set([]);
+    this.cantidades.set({});
     this.error.set('');
     this.cargarAsientos(f);
     this.step.set('seats');
@@ -220,7 +247,23 @@ export class BookingComponent implements OnInit {
     }
   }
 
-  // --- Paso 3: datos del comprador ---
+  // --- Paso 3: combos ---
+
+  cantidadDe(c: Combo): number {
+    return this.cantidades()[c.id] ?? 0;
+  }
+
+  cambiarCantidad(c: Combo, delta: number): void {
+    const nueva = Math.max(0, Math.min(20, this.cantidadDe(c) + delta));
+    this.cantidades.set({ ...this.cantidades(), [c.id]: nueva });
+  }
+
+  private siguienteDe(step: Step): Step {
+    const pasos = this.pasos();
+    return pasos[pasos.indexOf(step) + 1];
+  }
+
+  // --- Paso 4: datos del comprador ---
 
   private validarDatos(): boolean {
     const errores: Record<string, string> = {};
@@ -246,7 +289,7 @@ export class BookingComponent implements OnInit {
   handleContinue(): void {
     this.error.set('');
     const step = this.step();
-    if (step === 'seats') this.step.set('datos');
+    if (step === 'seats' || step === 'combos') this.step.set(this.siguienteDe(step));
     else if (step === 'datos') {
       if (this.validarDatos()) this.step.set('payment');
     } else if (step === 'payment') this.confirmPurchase();
@@ -256,9 +299,10 @@ export class BookingComponent implements OnInit {
     this.error.set('');
     const step = this.step();
     if (step === 'confirmation') return this.reset();
-    const idx = STEP_ORDER.indexOf(step);
+    const pasos = this.pasos();
+    const idx = pasos.indexOf(step);
     if (idx <= 0) return this.reset();
-    this.step.set(STEP_ORDER[idx - 1]);
+    this.step.set(pasos[idx - 1]);
   }
 
   goToStep(step: Step): void {
@@ -315,6 +359,7 @@ export class BookingComponent implements OnInit {
         invitado_telefono: this.datos.telefono.trim(),
         acepta_marketing: this.datos.acepta_marketing,
         codigo_descuento: this.descuento()?.codigo ?? null,
+        combos: this.combosElegidos().map((x) => ({ combo_id: x.combo.id, cantidad: x.cantidad })),
       })
       .subscribe({
         next: (reserva) => this.pagar(reserva.id, correo),

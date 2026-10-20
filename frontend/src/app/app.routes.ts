@@ -5,6 +5,7 @@ import { LoginComponent } from './features/login/login.component';
 import { AdminDashboardComponent } from './features/admin-dashboard/admin-dashboard.component';
 import { AdminFuncionesComponent } from './features/admin-funciones/admin-funciones.component';
 import { AdminCampaniasComponent } from './features/admin-campanias/admin-campanias.component';
+import { AdminCombosComponent } from './features/admin-combos/admin-combos.component';
 import { authGuard } from './core/services/auth.guard';
 
 export const routes: Routes = [
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: 'admin', component: AdminDashboardComponent, canActivate: [authGuard] },
   { path: 'admin/funciones', component: AdminFuncionesComponent, canActivate: [authGuard] },
   { path: 'admin/campanias', component: AdminCampaniasComponent, canActivate: [authGuard] },
+  { path: 'admin/combos', component: AdminCombosComponent, canActivate: [authGuard] },
   {
     path: 'admin/configuracion',
     component: AdminDashboardComponent,

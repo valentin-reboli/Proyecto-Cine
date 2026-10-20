@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Asiento;
 use App\Models\Cliente;
+use App\Models\Combo;
 use App\Models\Funcion;
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
+use App\Models\ReservaCombo;
 use App\Services\DescuentoService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -78,6 +80,9 @@ class ReservaController extends Controller
             'invitado_telefono' => ['nullable', 'string', 'max:30'],
             'acepta_marketing' => ['nullable', 'boolean'],
             'codigo_descuento' => ['nullable', 'string', 'max:20'],
+            'combos' => ['nullable', 'array', 'max:20'],
+            'combos.*.combo_id' => ['required', 'integer', 'distinct'],
+            'combos.*.cantidad' => ['required', 'integer', 'min:1', 'max:20'],
         ]);
 
         $funcion = Funcion::findOrFail($data['funcion_id']);
@@ -107,11 +112,21 @@ class ReservaController extends Controller
             }
         }
 
+        // Combos pedidos: solo los activos, al precio actual.
+        $pedidos = collect($data['combos'] ?? []);
+        $combos = Combo::whereIn('id', $pedidos->pluck('combo_id'))->where('activo', true)->get()->keyBy('id');
+
+        if ($combos->count() !== $pedidos->count()) {
+            return response()->json(['message' => 'Alguno de los combos elegidos ya no está disponible.'], 422);
+        }
+
+        $combosTotal = $pedidos->sum(fn ($p) => $combos[$p['combo_id']]->precio * $p['cantidad']);
+
         $subtotal = $funcion->precio_base * $asientos->count();
         $descuentoMonto = $descuento ? round($subtotal * $descuento->porcentaje / 100, 2) : 0;
 
         try {
-            $reserva = DB::transaction(function () use ($data, $funcion, $asientos, $descuento, $descuentoMonto, $subtotal) {
+            $reserva = DB::transaction(function () use ($data, $funcion, $asientos, $descuento, $descuentoMonto, $subtotal, $pedidos, $combos, $combosTotal) {
                 // Contacto para campañas: un registro por correo, siempre con los datos mas recientes.
                 $cliente = Cliente::firstOrNew(['correo' => strtolower($data['invitado_correo'])]);
                 $cliente->nombre = $data['invitado_nombre'];
@@ -126,11 +141,23 @@ class ReservaController extends Controller
                     'invitado_nombre' => $data['invitado_nombre'],
                     'invitado_correo' => $data['invitado_correo'],
                     'invitado_telefono' => $data['invitado_telefono'] ?? null,
-                    'total' => $subtotal - $descuentoMonto,
+                    'total' => $subtotal - $descuentoMonto + $combosTotal,
+                    'combos_total' => $combosTotal,
                     'descuento_id' => $descuento?->id,
                     'descuento_monto' => $descuentoMonto,
                     'estado' => 'pendiente',
                 ]);
+
+                foreach ($pedidos as $pedido) {
+                    $combo = $combos[$pedido['combo_id']];
+                    ReservaCombo::create([
+                        'reserva_id' => $reserva->id,
+                        'combo_id' => $combo->id,
+                        'nombre' => $combo->nombre,
+                        'precio_unitario' => $combo->precio,
+                        'cantidad' => $pedido['cantidad'],
+                    ]);
+                }
 
                 foreach ($asientos as $asiento) {
                     ReservaAsiento::create([
@@ -152,7 +179,7 @@ class ReservaController extends Controller
         }
 
         return response()->json(
-            $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento']),
+            $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'combos']),
             201
         );
     }
@@ -207,7 +234,7 @@ class ReservaController extends Controller
 
         abort_unless(strcasecmp($reserva->invitado_correo, $data['correo']) === 0, 403);
 
-        return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos', 'descuentoGenerado']);
+        return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos', 'descuentoGenerado', 'combos']);
     }
 
     // Cancelacion manual: la dispara el timer del front cuando se vence el

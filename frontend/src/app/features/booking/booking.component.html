@@ -122,6 +122,40 @@
               </div>
             </div>
           }
+          @case ('combos') {
+            <div class="booking-step">
+              <h2>¿Querés agregar algo para comer o tomar?</h2>
+              <p class="step-sub">Combos, pochoclos, bebidas y golosinas. Es opcional: podés continuar sin elegir nada.</p>
+              <div class="combo-grid">
+                @for (c of combosDisponibles(); track c.id) {
+                  <div class="combo-card" [class.combo-activo]="cantidadDe(c) > 0">
+                    <div
+                      class="combo-img"
+                      [style.background-image]="c.imagen_url ? 'url(' + c.imagen_url + ')' : ''"
+                      style="background-size: cover; background-position: center"
+                    >
+                      @if (!c.imagen_url) { <span>🍿</span> }
+                    </div>
+                    <div class="combo-body">
+                      <strong>{{ c.nombre }}</strong>
+                      @if (c.descripcion) { <span class="combo-desc">{{ c.descripcion }}</span> }
+                      <span class="combo-precio">{{ formatPrice(+c.precio) }}</span>
+                    </div>
+                    <div class="combo-qty">
+                      <button type="button" class="qty-btn" [disabled]="cantidadDe(c) === 0" (click)="cambiarCantidad(c, -1)">−</button>
+                      <span>{{ cantidadDe(c) }}</span>
+                      <button type="button" class="qty-btn" (click)="cambiarCantidad(c, 1)">+</button>
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="combo-resumen">
+                <div><span>Entradas ({{ selectedSeats().length }})</span><span>{{ formatPrice(entradasTotal()) }}</span></div>
+                <div><span>Combos ({{ combosCantidad() }})</span><span>{{ formatPrice(combosTotal()) }}</span></div>
+                <div class="combo-resumen-total"><span>Total</span><span>{{ formatPrice(total()) }}</span></div>
+              </div>
+            </div>
+          }
           @case ('datos') {
             <div class="booking-step">
               <h2>Tus datos</h2>
@@ -273,6 +307,19 @@
               @if (descuento(); as d) {
                 <div class="sidebar-row">
                   <span>Descuento {{ d.porcentaje }}%</span><span>-{{ formatPrice(descuentoMonto()) }}</span>
+                </div>
+              }
+              @if (combosElegidos().length > 0) {
+                <div class="sidebar-row sidebar-sep">
+                  <span>Subtotal entradas</span><span>{{ formatPrice(entradasTotal()) }}</span>
+                </div>
+                @for (x of combosElegidos(); track x.combo.id) {
+                  <div class="sidebar-row">
+                    <span>{{ x.cantidad }}× {{ x.combo.nombre }}</span><span>{{ formatPrice(+x.combo.precio * x.cantidad) }}</span>
+                  </div>
+                }
+                <div class="sidebar-row sidebar-sep">
+                  <span>Subtotal combos</span><span>{{ formatPrice(combosTotal()) }}</span>
                 </div>
               }
             </div>

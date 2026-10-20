@@ -22,7 +22,7 @@ class CompraNotifier
             return false;
         }
 
-        $reserva->load(['funcion.pelicula', 'funcion.sala', 'funcion.formato', 'reservaAsientos.asiento', 'descuentoGenerado']);
+        $reserva->load(['funcion.pelicula', 'funcion.sala', 'funcion.formato', 'reservaAsientos.asiento', 'descuentoGenerado', 'combos']);
         $funcion = $reserva->funcion;
         $butacas = $reserva->reservaAsientos->map(fn ($ra) => $ra->asiento->fila.$ra->asiento->numero)->sort()->values();
         // APP_URL (no el host del request): detras de Caddy el host que ve Laravel es interno.
@@ -37,6 +37,7 @@ class CompraNotifier
             ."Película: {$funcion->pelicula->titulo}\n"
             ."Función: {$fecha} {$hora} · {$funcion->sala->nombre} · {$funcion->formato->nombre}\n"
             .'Butacas: '.$butacas->implode(', ')."\n"
+            .($reserva->combos->isNotEmpty() ? 'Combos: '.$reserva->combos->map(fn ($c) => "{$c->cantidad}x {$c->nombre}")->implode(', ')."\n" : '')
             .'Total: $'.number_format((float) $reserva->total, 0, ',', '.')."\n"
             ."Reserva Nº {$reserva->id}\n"
             .'Presentá el código QR en la entrada del cine.'
@@ -64,6 +65,7 @@ class CompraNotifier
                     'idioma' => $funcion->idioma,
                 ],
                 'butacas' => $butacas->all(),
+                'combos' => $reserva->combos->map(fn ($c) => ['nombre' => $c->nombre, 'cantidad' => $c->cantidad, 'precio_unitario' => $c->precio_unitario])->values()->all(),
                 'descuento' => $descuento ? [
                     'codigo' => $descuento->codigo,
                     'porcentaje' => $descuento->porcentaje,

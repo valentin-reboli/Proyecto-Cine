@@ -19,6 +19,7 @@ class Reserva extends Model
         'comprobante_enviado_en',
         'descuento_id',
         'descuento_monto',
+        'combos_total',
     ];
 
     protected $casts = [
@@ -39,6 +40,11 @@ class Reserva extends Model
     public function descuentoGenerado()
     {
         return $this->hasOne(Descuento::class, 'reserva_origen_id');
+    }
+
+    public function combos()
+    {
+        return $this->hasMany(ReservaCombo::class);
     }
 
     public function reservaAsientos()

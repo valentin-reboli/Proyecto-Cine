@@ -1,0 +1,134 @@
+<div class="admin-page">
+  <header class="site-header">
+    <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+    <nav class="main-nav">
+      <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
+      <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
+      <a routerLink="/admin/combos" routerLinkActive="activo">Combos</a>
+      <a routerLink="/admin/campanias" routerLinkActive="activo">Campañas</a>
+      <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
+      <a routerLink="/">Ver sitio</a>
+    </nav>
+    <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-toolbar">
+      <div>
+        <p class="eyebrow">Panel de administrador</p>
+        <h1>Combos y snacks</h1>
+      </div>
+    </div>
+
+    @if (aviso()) { <p class="admin-aviso">{{ aviso() }}</p> }
+    @if (error()) { <p class="admin-error">{{ error() }}</p> }
+
+    @if (cargando()) {
+      <p class="admin-loading">Cargando…</p>
+    } @else {
+      <section class="admin-section">
+        <div class="admin-section-head">
+          <h2>Combos <span class="admin-count">({{ combos().length }})</span></h2>
+          <button type="button" class="btn btn-primary" (click)="abrirNuevo()">+ Nuevo combo</button>
+        </div>
+
+        @if (combos().length === 0) {
+          <p class="admin-empty">Todavía no cargaste ningún combo. Los que estén activos se ofrecen al comprar entradas.</p>
+        } @else {
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th class="col-poster"></th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th class="col-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of combos(); track c.id) {
+                <tr>
+                  <td class="col-poster">
+                    <div class="admin-thumb" [style.background-image]="c.imagen_url ? 'url(' + c.imagen_url + ')' : ''">
+                      @if (!c.imagen_url) { <span>—</span> }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="admin-titulo">{{ c.nombre }}</span>
+                    @if (c.descripcion) { <span class="admin-preview-label">{{ c.descripcion }}</span> }
+                  </td>
+                  <td>{{ categoriaLabel(c.categoria) }}</td>
+                  <td>${{ c.precio }}</td>
+                  <td>{{ c.activo ? 'Activo' : 'Oculto' }}</td>
+                  <td class="col-acciones">
+                    <button type="button" class="btn-link" (click)="abrirEdicion(c)">Editar</button>
+                    <button type="button" class="btn-link" (click)="toggleActivo(c)">{{ c.activo ? 'Ocultar' : 'Activar' }}</button>
+                    <button type="button" class="admin-btn-danger" (click)="eliminar(c)">Borrar</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+    }
+  </main>
+
+  @if (mostrarForm()) {
+    <div class="admin-modal-backdrop" (click)="cerrarForm()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>{{ editandoId() ? 'Editar combo' : 'Nuevo combo' }}</h2>
+        <form class="admin-form" (ngSubmit)="guardar()">
+          <label class="field">
+            <span class="field-label">Nombre *</span>
+            <input type="text" name="nombre" placeholder="Combo Pochoclo grande + 2 gaseosas" [(ngModel)]="form.nombre" [class.field-invalid]="errores()['nombre']" />
+            @if (errores()['nombre']) { <span class="field-error">{{ errores()['nombre'] }}</span> }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Detalle</span>
+            <input type="text" name="descripcion" placeholder="Qué incluye" [(ngModel)]="form.descripcion" />
+          </label>
+
+          <div class="admin-form-row">
+            <label class="field">
+              <span class="field-label">Tipo *</span>
+              <select name="categoria" [(ngModel)]="form.categoria">
+                @for (c of categorias; track c.value) {
+                  <option [ngValue]="c.value">{{ c.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">Precio ($) *</span>
+              <input type="number" name="precio" min="0" step="100" [(ngModel)]="form.precio" [class.field-invalid]="errores()['precio']" />
+              @if (errores()['precio']) { <span class="field-error">{{ errores()['precio'] }}</span> }
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Link de la foto (directo, termina en .jpg/.png)</span>
+            <input type="text" name="imagen_url" placeholder="https://i.ibb.co/..." [(ngModel)]="form.imagen_url" />
+            @if (form.imagen_url) {
+              <div class="admin-preview-row">
+                <img [src]="form.imagen_url" alt="" class="admin-preview-poster" />
+                <span class="admin-preview-label">Vista previa</span>
+              </div>
+            }
+          </label>
+
+          <label class="remember">
+            <input type="checkbox" name="activo" [(ngModel)]="form.activo" />
+            Se ofrece al comprar
+          </label>
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarForm()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

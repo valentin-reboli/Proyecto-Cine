@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Asiento;
+use App\Models\Combo;
 use App\Models\Formato;
 use App\Models\Funcion;
 use App\Models\Genero;
@@ -272,5 +273,38 @@ class ReservaFlowTest extends TestCase
 
         $this->postJson('/api/descuentos/validar', ['codigo' => $regalo['codigo'], 'correo' => 'ana@test.com'])
             ->assertUnprocessable()->assertJsonPath('message', 'Ese código ya fue usado.');
+    }
+
+    public function test_combos_se_suman_al_total_y_solo_se_ofrecen_los_activos(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $combo = $this->postJson('/api/combos', [
+            'nombre' => 'Combo Pochoclo + Gaseosa', 'categoria' => 'combo', 'precio' => 500, 'activo' => true,
+        ])->assertCreated()->json();
+        $inactivo = Combo::create(['nombre' => 'Viejo', 'categoria' => 'bebida', 'precio' => 100, 'activo' => false]);
+
+        $this->assertCount(1, $this->getJson('/api/combos')->json());
+        $this->assertCount(2, $this->getJson('/api/admin/combos')->json());
+
+        $funcion = $this->crearFuncion();
+        $asientos = Asiento::where('sala_id', $funcion->sala_id)->get();
+        $base = [
+            'funcion_id' => $funcion->id, 'asientos' => [$asientos[0]->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+        ];
+
+        // combo desactivado: se rechaza
+        $this->postJson('/api/reservas', $base + ['combos' => [['combo_id' => $inactivo->id, 'cantidad' => 1]]])->assertUnprocessable();
+
+        // 1 entrada (1000) + 2 combos (2 x 500)
+        $reserva = $this->postJson('/api/reservas', $base + ['combos' => [['combo_id' => $combo['id'], 'cantidad' => 2]]])
+            ->assertCreated();
+        $this->assertEquals(2000, $reserva->json('total'));
+        $this->assertEquals(1000, $reserva->json('combos_total'));
+        $this->assertSame('Combo Pochoclo + Gaseosa', $reserva->json('combos.0.nombre'));
+
+        // un combo vendido no se puede borrar, solo desactivar
+        $this->deleteJson("/api/combos/{$combo['id']}")->assertUnprocessable();
+        $this->deleteJson("/api/combos/{$inactivo->id}")->assertNoContent();
     }
 }
