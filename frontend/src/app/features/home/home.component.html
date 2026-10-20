@@ -9,52 +9,47 @@
   <a href="#cartelera" class="btn btn-primary">Comprar entradas</a>
 </header>
 
+@if (heroMovie(); as hero) {
 <section class="hero">
   <div
     class="hero-media"
-    style="
-      background-image: url('/img/spidermanbackdrop.jpg');
-      background-size: cover;
-      background-position: center;
-    "
+    [style.background-image]="'url(' + (hero.backdrop || hero.poster) + ')'"
+    style="background-size: cover; background-position: center"
   ></div>
   <div class="hero-scrim-v"></div>
   <div class="hero-scrim-h"></div>
   <div class="hero-content">
     <div class="eyebrow">En cartelera ahora</div>
-    <h1 class="hero-title">{{ heroMovie.title }}</h1>
+    <h1 class="hero-title">{{ hero.title }}</h1>
     <div class="meta-row">
-      @for (genre of heroMovie.genres; track genre; let last = $last) {
+      @for (genre of hero.genres; track genre; let last = $last) {
         <span>{{ genre }}</span>
         @if (!last) {
           <span class="dot">·</span>
         }
       }
-      <span class="dot">·</span><span>{{ heroMovie.duration }} min</span>
+      <span class="dot">·</span><span>{{ hero.duration }} min</span>
       <span class="dot">·</span>
-      <span class="tag tag-outline">{{ heroMovie.rating }}</span>
-      @for (format of heroMovie.formats; track format) {
+      <span class="tag tag-outline">{{ hero.rating }}</span>
+      @for (format of hero.formats; track format) {
         <span class="tag">{{ format }}</span>
       }
-      @for (lang of langBadgesFor(heroMovie); track lang) {
+      @for (lang of langBadgesFor(hero); track lang) {
         <span class="tag">{{ lang }}</span>
       }
     </div>
-    <p class="hero-synopsis">
-      A medida que las exigencias a las que se ve sometido Spider-Man se
-      intensifican, la presión desencadena una sorprendente evolución física
-      que pone en peligro su existencia. Al mismo tiempo, una nueva y extraña
-      ola de delitos da lugar a una de las amenazas más poderosas a las que se
-      ha enfrentado jamás.
-    </p>
+    @if (hero.synopsis) {
+      <p class="hero-synopsis">{{ hero.synopsis }}</p>
+    }
     <div class="hero-actions">
       <button class="btn btn-primary btn-lg" (click)="openHeroMovie()">
         Comprar entradas
       </button>
-      <a [href]="'#movie-' + heroMovie.id" class="btn-link">Ver en cartelera</a>
+      <a [href]="'#movie-' + hero.id" class="btn-link">Ver en cartelera</a>
     </div>
   </div>
 </section>
+}
 
 <section id="cartelera" class="section">
   <div class="section-head">
@@ -78,6 +73,12 @@
       </select>
     </div>
   </div>
+
+  @if (loading()) {
+    <p class="no-results">Cargando cartelera...</p>
+  } @else if (error()) {
+    <p class="no-results">No pudimos cargar la cartelera. Intentá de nuevo más tarde.</p>
+  }
 
   <div class="movie-grid">
     @for (movie of filteredMovies(); track movie.id) {
@@ -107,7 +108,7 @@
       </div>
     }
   </div>
-  @if (filteredMovies().length === 0) {
+  @if (!loading() && !error() && filteredMovies().length === 0) {
     <p class="no-results">No encontramos películas con esos filtros.</p>
   }
 </section>
@@ -115,7 +116,7 @@
 <section id="proximamente" class="section">
   <h2>Próximamente</h2>
   <div class="coming-soon-grid">
-    @for (movie of comingSoon; track movie.id) {
+    @for (movie of comingSoon(); track movie.id) {
       <div class="coming-soon-card">
         <div
           class="coming-soon-poster"

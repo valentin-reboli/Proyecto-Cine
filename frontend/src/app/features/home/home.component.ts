@@ -16,10 +16,11 @@ export class HomeComponent {
   private readonly bookingState = inject(BookingStateService);
   private readonly router = inject(Router);
 
-  readonly heroMovie = this.catalog.movies[0];
-
   readonly movies = this.catalog.movies;
   readonly comingSoon = this.catalog.comingSoon;
+  readonly loading = this.catalog.loading;
+  readonly error = this.catalog.error;
+  readonly heroMovie = computed(() => this.movies()[0] ?? null);
   readonly promotions = this.catalog.promotions;
 
   readonly searchQuery = signal('');
@@ -28,7 +29,7 @@ export class HomeComponent {
 
   readonly genreOptions = computed(() => [
     'Todos',
-    ...new Set(this.movies.flatMap((m) => m.genres)),
+    ...new Set(this.movies().flatMap((m) => m.genres)),
   ]);
   readonly formatOptions = ['Todos', '2D', '3D', 'ATMOS'];
 
@@ -37,7 +38,7 @@ export class HomeComponent {
     const genre = this.filterGenre();
     const format = this.filterFormat();
 
-    return this.movies.filter(
+    return this.movies().filter(
       (m) =>
         (genre === 'Todos' || m.genres.includes(genre)) &&
         (format === 'Todos' || m.formats.includes(format)) &&
@@ -63,11 +64,13 @@ export class HomeComponent {
   }
 
   openMovie(movie: Movie): void {
+    if (movie.todayTimes.length === 0) return;
     this.bookingState.select(movie, movie.todayTimes[0]);
     this.router.navigateByUrl('/reserva');
   }
 
   openHeroMovie(): void {
-    this.openMovie(this.heroMovie);
+    const movie = this.heroMovie();
+    if (movie) this.openMovie(movie);
   }
 }

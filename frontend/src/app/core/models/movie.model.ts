@@ -21,6 +21,8 @@ export interface Movie {
   formats: string[];
   sala: string;
   todayTimes: Showtime[];
+  synopsis?: string;
+  backdrop?: string;
 }
 
 export interface ComingSoonMovie {

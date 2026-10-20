@@ -38,6 +38,8 @@ export function mapToMovie(p: ApiPelicula): Movie {
     formats: formats.length ? formats : ['2D'],
     sala: funciones[0]?.sala?.nombre ?? '',
     todayTimes: funciones.map(mapToShowtime),
+    synopsis: p.sinopsis ?? undefined,
+    backdrop: p.backdrop_url ?? undefined,
   };
 }
 
