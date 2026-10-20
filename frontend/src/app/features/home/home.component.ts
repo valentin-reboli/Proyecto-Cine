@@ -64,8 +64,7 @@ export class HomeComponent {
   }
 
   openMovie(movie: Movie): void {
-    if (movie.todayTimes.length === 0) return;
-    this.bookingState.select(movie, movie.todayTimes[0]);
+    this.bookingState.select(movie);
     this.router.navigateByUrl('/reserva');
   }
 

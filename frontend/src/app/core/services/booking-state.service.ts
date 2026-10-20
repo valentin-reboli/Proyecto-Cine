@@ -3,7 +3,8 @@ import { Movie, Showtime } from '../models/movie.model';
 
 export interface BookingSelection {
   movie: Movie;
-  showtime: Showtime;
+  // Se elige en la pantalla de reserva, entre las funciones programadas de la pelicula.
+  showtime: Showtime | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -11,7 +12,7 @@ export class BookingStateService {
   private readonly _selection = signal<BookingSelection | null>(null);
   readonly selection = this._selection.asReadonly();
 
-  select(movie: Movie, showtime: Showtime): void {
+  select(movie: Movie, showtime: Showtime | null = null): void {
     this._selection.set({ movie, showtime });
   }
 

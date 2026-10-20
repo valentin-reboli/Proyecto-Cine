@@ -1,0 +1,10 @@
+.dia-title { margin: 22px 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); }
+.funcion-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.funcion-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 150px; text-align: left; }
+.funcion-btn strong { font-size: 18px; }
+.funcion-btn span { font-size: 12px; opacity: 0.8; }
+.form-error { color: #ff6b6b; font-size: 12px; font-weight: 500; }
+.booking-error { margin-top: 16px; font-size: 14px; }
+.check-row { flex-direction: row !important; align-items: flex-start; gap: 10px !important; font-weight: 400 !important; }
+.check-row input { width: auto; margin-top: 3px; }
+.qr-img { width: 220px; height: 220px; image-rendering: pixelated; margin: 16px auto; display: block; background: #fff; padding: 8px; border-radius: 8px; }

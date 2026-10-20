@@ -8,6 +8,8 @@ export interface Showtime {
   funcionId?: number;
   date?: string;
   price?: number;
+  format?: string;
+  sala?: string;
 }
 
 export interface Movie {

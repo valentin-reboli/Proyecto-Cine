@@ -15,6 +15,8 @@ function mapToShowtime(f: ApiFuncion): Showtime {
     funcionId: f.id,
     date: f.fecha_hora.slice(0, 10),
     price: Number(f.precio_base),
+    format: f.formato?.nombre,
+    sala: f.sala?.nombre,
   };
 }
 

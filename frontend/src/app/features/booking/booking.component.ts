@@ -1,22 +1,25 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import qrcode from 'qrcode-generator';
+import { API_URL } from '../../core/services/api.config';
 import { CatalogService } from '../../core/services/catalog.service';
-import { BookingSelection, BookingStateService } from '../../core/services/booking-state.service';
+import { BookingStateService } from '../../core/services/booking-state.service';
+import { Showtime } from '../../core/models/movie.model';
 
-type Step = 'seats' | 'tickets' | 'payment' | 'confirmation';
-type ProgressKey = 'funcion' | Step;
-type SeatType = 'general' | 'reducida';
+type Step = 'funcion' | 'seats' | 'datos' | 'payment' | 'confirmation';
 type PaymentMethodKey = 'tarjeta' | 'mercadopago';
 
-interface Seat {
-  id: string;
-  num: number;
-  occupied: boolean;
-  selected: boolean;
+interface ApiAsiento {
+  id: number;
+  fila: string;
+  numero: number;
+  estado: 'disponible' | 'temporal' | 'ocupado' | 'bloqueado';
 }
 
 interface ProgressStep {
-  key: ProgressKey;
+  key: Step;
   label: string;
   icon: string;
   hasLine: boolean;
@@ -26,153 +29,112 @@ interface ProgressStep {
   labelColor: string;
 }
 
-const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-const SEATS_PER_ROW = 10;
+interface Dia {
+  fecha: string;
+  label: string;
+  funciones: Showtime[];
+}
+
 const MAX_SEATS = 8;
-const DATE_LABEL = 'HOY 14 AGO';
-const STEP_ORDER: Step[] = ['seats', 'tickets', 'payment'];
+const STEP_ORDER: Step[] = ['funcion', 'seats', 'datos', 'payment'];
 const STEP_LABELS: Record<Step, string> = {
+  funcion: 'Función',
   seats: 'Butacas',
-  tickets: 'Entradas',
+  datos: 'Tus datos',
   payment: 'Pago',
   confirmation: 'Confirmación',
 };
+const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-function seededRandomOccupied(seed: string): string[] {
-  let s = 0;
-  for (let i = 0; i < seed.length; i++) s = (s * 31 + seed.charCodeAt(i)) >>> 0;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967295;
-  };
-  const all: string[] = [];
-  ROWS.forEach((r) => {
-    for (let i = 1; i <= SEATS_PER_ROW; i++) all.push(r + i);
-  });
-  const occupied: string[] = [];
-  while (occupied.length < 14) {
-    const seat = all[Math.floor(rand() * all.length)];
-    if (!occupied.includes(seat)) occupied.push(seat);
-  }
-  return occupied;
+function ahoraLocal(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 @Component({
   selector: 'app-booking',
+  imports: [FormsModule],
   templateUrl: './booking.component.html',
   styleUrl: './booking.component.css',
 })
 export class BookingComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   private readonly bookingState = inject(BookingStateService);
   private readonly catalog = inject(CatalogService);
 
   readonly selection = this.bookingState.selection;
-
-  readonly dateLabel = DATE_LABEL;
-  readonly priceGeneral = this.catalog.priceGeneral;
-  readonly priceReducida = this.catalog.priceReducida;
 
   readonly paymentMethods: { key: PaymentMethodKey; label: string }[] = [
     { key: 'tarjeta', label: 'Tarjeta de crédito / débito' },
     { key: 'mercadopago', label: 'Mercado Pago' },
   ];
 
-  readonly step = signal<Step>('seats');
-  readonly selectedSeats = signal<string[]>([]);
-  readonly seatTypes = signal<Record<string, SeatType>>({});
+  readonly step = signal<Step>('funcion');
+  readonly asientos = signal<ApiAsiento[]>([]);
+  readonly cargandoAsientos = signal(false);
+  readonly selectedSeats = signal<number[]>([]);
   readonly paymentMethod = signal<PaymentMethodKey>('tarjeta');
-  readonly orderNumber = signal<string | null>(null);
+  readonly procesando = signal(false);
+  readonly error = signal('');
+  readonly erroresDatos = signal<Record<string, string>>({});
+  readonly codigo = signal<string | null>(null);
+  readonly reservaId = signal<number | null>(null);
+  readonly qrSrc = signal<string | null>(null);
 
-  readonly occupiedSeats = computed(() => {
+  datos = { nombre: '', correo: '', telefono: '', acepta_marketing: false };
+
+  // Funciones programadas de la pelicula (las que ya pasaron no se muestran), agrupadas por dia.
+  readonly dias = computed((): Dia[] => {
     const sel = this.selection();
     if (!sel) return [];
-    return seededRandomOccupied(sel.movie.id + this.dateLabel + this.timeLabel(sel));
+    const ahora = ahoraLocal();
+    const porDia = new Map<string, Showtime[]>();
+    [...sel.movie.todayTimes]
+      .filter((f) => f.funcionId && `${f.date} ${f.time}` >= ahora)
+      .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+      .forEach((f) => porDia.set(f.date!, [...(porDia.get(f.date!) ?? []), f]));
+    return [...porDia.entries()].map(([fecha, funciones]) => {
+      const [y, m, d] = fecha.split('-').map(Number);
+      const dia = DIAS[new Date(y, m - 1, d).getDay()];
+      return { fecha, label: `${dia} ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`, funciones };
+    });
   });
 
   readonly seatRows = computed(() => {
-    const occupied = this.occupiedSeats();
-    const selected = this.selectedSeats();
-    return ROWS.map((row) => ({
-      row,
-      seats: Array.from({ length: SEATS_PER_ROW }, (_, i): Seat => {
-        const id = row + (i + 1);
-        return {
-          id,
-          num: i + 1,
-          occupied: occupied.includes(id),
-          selected: selected.includes(id),
-        };
-      }),
-    }));
+    const porFila = new Map<string, ApiAsiento[]>();
+    this.asientos().forEach((a) => porFila.set(a.fila, [...(porFila.get(a.fila) ?? []), a]));
+    return [...porFila.entries()].map(([row, seats]) => ({ row, seats }));
   });
 
-  readonly sortedSelectedSeats = computed(() => [...this.selectedSeats()].sort());
+  readonly selectedLabels = computed(() => {
+    const ids = this.selectedSeats();
+    return this.asientos()
+      .filter((a) => ids.includes(a.id))
+      .map((a) => a.fila + a.numero);
+  });
 
-  readonly generalCount = computed(
-    () => this.selectedSeats().filter((id) => (this.seatTypes()[id] ?? 'general') === 'general').length,
-  );
-  readonly reducidaCount = computed(
-    () => this.selectedSeats().filter((id) => this.seatTypes()[id] === 'reducida').length,
-  );
-
-  readonly total = computed(() =>
-    this.selectedSeats().reduce(
-      (sum, id) => sum + (this.seatTypes()[id] === 'reducida' ? this.priceReducida : this.priceGeneral),
-      0,
-    ),
-  );
+  readonly price = computed(() => this.selection()?.showtime?.price ?? 0);
+  readonly total = computed(() => this.price() * this.selectedSeats().length);
 
   readonly progressSteps = computed((): ProgressStep[] => {
     const step = this.step();
-    const currentIdx = STEP_ORDER.indexOf(step);
-    const entries: { key: ProgressKey; label: string }[] = [
-      { key: 'funcion', label: 'Función' },
-      ...STEP_ORDER.map((k) => ({ key: k as ProgressKey, label: STEP_LABELS[k] })),
-      { key: 'confirmation', label: STEP_LABELS.confirmation },
-    ];
-
-    return entries.map((entry, i) => {
-      let done: boolean;
-      let icon: string;
-      if (entry.key === 'funcion') {
-        done = true;
-        icon = '✓';
-      } else if (entry.key === 'confirmation') {
-        done = step === 'confirmation';
-        icon = done ? '✓' : String(STEP_ORDER.length + 1);
-      } else {
-        const idx = STEP_ORDER.indexOf(entry.key);
-        done = idx < currentIdx;
-        icon = done ? '✓' : String(idx + 1);
-      }
-      const current = entry.key === step;
-
-      let dotBg = 'transparent';
-      let dotFg = 'var(--text-muted)';
-      let dotBorder = 'var(--border-strong)';
-      let labelColor = 'var(--text-muted)';
-      if (current) {
-        dotBg = 'var(--accent)';
-        dotFg = 'var(--bg)';
-        dotBorder = 'var(--accent)';
-        labelColor = 'var(--text-primary)';
-      } else if (done) {
-        dotBg = 'var(--accent-soft-12)';
-        dotFg = 'var(--accent)';
-        dotBorder = 'var(--accent)';
-        labelColor = 'var(--text-primary)';
-      }
-
+    const currentIdx = step === 'confirmation' ? STEP_ORDER.length : STEP_ORDER.indexOf(step);
+    const all: Step[] = [...STEP_ORDER, 'confirmation'];
+    return all.map((key, i) => {
+      const done = i < currentIdx || step === 'confirmation';
+      const current = key === step;
+      const active = current || done;
       return {
-        key: entry.key,
-        label: entry.label,
-        icon,
-        hasLine: i < entries.length - 1,
-        dotBg,
-        dotFg,
-        dotBorder,
-        labelColor,
+        key,
+        label: STEP_LABELS[key],
+        icon: done ? '✓' : String(i + 1),
+        hasLine: i < all.length - 1,
+        dotBg: current ? 'var(--accent)' : done ? 'var(--accent-soft-12)' : 'transparent',
+        dotFg: current ? 'var(--bg)' : done ? 'var(--accent)' : 'var(--text-muted)',
+        dotBorder: active ? 'var(--accent)' : 'var(--border-strong)',
+        labelColor: active ? 'var(--text-primary)' : 'var(--text-muted)',
       };
     });
   });
@@ -183,77 +145,167 @@ export class BookingComponent implements OnInit {
     }
   }
 
-  timeLabel(sel: BookingSelection): string {
-    return sel.showtime.time + ' · ' + this.catalog.langLabel(sel.showtime.lang);
+  langLabel(f: Showtime): string {
+    return this.catalog.langLabel(f.lang);
   }
 
   formatPrice(amount: number): string {
     return this.catalog.formatPrice(amount);
   }
 
-  seatTypeOf(id: string): SeatType {
-    return this.seatTypes()[id] ?? 'general';
+  fechaLabel(f: Showtime): string {
+    const dia = this.dias().find((d) => d.fecha === f.date);
+    return dia?.label ?? f.date ?? '';
   }
 
-  toggleSeat(id: string): void {
-    if (this.occupiedSeats().includes(id)) return;
+  // --- Paso 1: elegir funcion ---
+
+  elegirFuncion(f: Showtime): void {
+    const sel = this.selection();
+    if (!sel) return;
+    this.bookingState.select(sel.movie, f);
+    this.selectedSeats.set([]);
+    this.error.set('');
+    this.cargarAsientos(f);
+    this.step.set('seats');
+  }
+
+  private cargarAsientos(f: Showtime): void {
+    this.cargandoAsientos.set(true);
+    this.asientos.set([]);
+    this.http.get<ApiAsiento[]>(`${API_URL}/funciones/${f.funcionId}/asientos`).subscribe({
+      next: (asientos) => {
+        this.asientos.set(asientos);
+        this.cargandoAsientos.set(false);
+      },
+      error: () => {
+        this.error.set('No pudimos cargar las butacas. Intentá de nuevo.');
+        this.cargandoAsientos.set(false);
+      },
+    });
+  }
+
+  // --- Paso 2: butacas ---
+
+  isSelected(a: ApiAsiento): boolean {
+    return this.selectedSeats().includes(a.id);
+  }
+
+  toggleSeat(a: ApiAsiento): void {
+    if (a.estado !== 'disponible') return;
     const seats = this.selectedSeats();
-    const idx = seats.indexOf(id);
-    if (idx > -1) {
-      this.selectedSeats.set(seats.filter((s) => s !== id));
-      const types = { ...this.seatTypes() };
-      delete types[id];
-      this.seatTypes.set(types);
-    } else {
-      if (seats.length >= MAX_SEATS) return;
-      this.selectedSeats.set([...seats, id]);
-      this.seatTypes.set({ ...this.seatTypes(), [id]: 'general' });
+    if (seats.includes(a.id)) {
+      this.selectedSeats.set(seats.filter((id) => id !== a.id));
+    } else if (seats.length < MAX_SEATS) {
+      this.selectedSeats.set([...seats, a.id]);
     }
   }
 
-  setSeatType(id: string, type: SeatType): void {
-    this.seatTypes.set({ ...this.seatTypes(), [id]: type });
+  // --- Paso 3: datos del comprador ---
+
+  private validarDatos(): boolean {
+    const errores: Record<string, string> = {};
+    if (!this.datos.nombre.trim()) errores['nombre'] = 'Ingresá tu nombre.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.datos.correo.trim())) errores['correo'] = 'Ingresá un correo válido.';
+    const tel = this.datos.telefono.replace(/[\s-]/g, '');
+    if (!/^\+?\d{8,15}$/.test(tel)) errores['telefono'] = 'Ingresá un teléfono válido (solo números).';
+    this.erroresDatos.set(errores);
+    return Object.keys(errores).length === 0;
   }
 
-  setPaymentMethod(method: PaymentMethodKey): void {
-    this.paymentMethod.set(method);
+  // --- Navegacion ---
+
+  continueDisabled(): boolean {
+    return this.procesando() || (this.step() === 'seats' && this.selectedSeats().length === 0);
+  }
+
+  continueLabel(): string {
+    if (this.procesando()) return 'Procesando…';
+    return this.step() === 'payment' ? `Confirmar compra · ${this.formatPrice(this.total())}` : 'Continuar';
+  }
+
+  handleContinue(): void {
+    this.error.set('');
+    const step = this.step();
+    if (step === 'seats') this.step.set('datos');
+    else if (step === 'datos') {
+      if (this.validarDatos()) this.step.set('payment');
+    } else if (step === 'payment') this.confirmPurchase();
+  }
+
+  handleBack(): void {
+    this.error.set('');
+    const step = this.step();
+    if (step === 'confirmation') return this.reset();
+    const idx = STEP_ORDER.indexOf(step);
+    if (idx <= 0) return this.reset();
+    this.step.set(STEP_ORDER[idx - 1]);
   }
 
   goToStep(step: Step): void {
     this.step.set(step);
   }
 
-  continueDisabled(): boolean {
-    return this.step() === 'seats' && this.selectedSeats().length === 0;
+  setPaymentMethod(method: PaymentMethodKey): void {
+    this.paymentMethod.set(method);
   }
 
-  continueLabel(): string {
-    return this.step() === 'payment' ? 'Confirmar compra' : 'Continuar';
-  }
-
-  handleContinue(): void {
-    const step = this.step();
-    if (step === 'seats') this.step.set('tickets');
-    else if (step === 'tickets') this.step.set('payment');
-    else if (step === 'payment') this.confirmPurchase();
-  }
-
-  handleBack(): void {
-    if (this.step() === 'confirmation') {
-      this.reset();
-      return;
-    }
-    const idx = STEP_ORDER.indexOf(this.step());
-    if (idx <= 0) {
-      this.reset();
-      return;
-    }
-    this.step.set(STEP_ORDER[idx - 1]);
-  }
+  // --- Paso 4: crear la reserva y registrar el pago ---
 
   confirmPurchase(): void {
-    this.orderNumber.set('CC-' + Math.floor(100000 + Math.random() * 899999));
-    this.step.set('confirmation');
+    const sel = this.selection();
+    if (!sel?.showtime?.funcionId) return;
+    this.procesando.set(true);
+    this.error.set('');
+
+    const correo = this.datos.correo.trim();
+    this.http
+      .post<{ id: number }>(`${API_URL}/reservas`, {
+        funcion_id: sel.showtime.funcionId,
+        asientos: this.selectedSeats(),
+        invitado_nombre: this.datos.nombre.trim(),
+        invitado_correo: correo,
+        invitado_telefono: this.datos.telefono.trim(),
+        acepta_marketing: this.datos.acepta_marketing,
+      })
+      .subscribe({
+        next: (reserva) => this.pagar(reserva.id, correo),
+        error: (err) => {
+          this.procesando.set(false);
+          if (err.status === 409) {
+            // Alguien se llevo una de las butacas: se recargan para elegir otras.
+            this.selectedSeats.set([]);
+            this.cargarAsientos(sel.showtime!);
+            this.step.set('seats');
+          }
+          this.error.set(err?.error?.message ?? 'No pudimos crear la reserva. Intentá de nuevo.');
+        },
+      });
+  }
+
+  private pagar(reservaId: number, correo: string): void {
+    this.http
+      .post<{ reserva: { id: number; codigo_qr: string } }>(`${API_URL}/reservas/${reservaId}/pago`, {
+        correo,
+        metodo: this.paymentMethod(),
+      })
+      .subscribe({
+        next: (pago) => {
+          const codigo = pago.reserva.codigo_qr;
+          const qr = qrcode(0, 'M');
+          qr.addData(codigo);
+          qr.make();
+          this.reservaId.set(pago.reserva.id);
+          this.codigo.set(codigo);
+          this.qrSrc.set(qr.createDataURL(6, 8));
+          this.procesando.set(false);
+          this.step.set('confirmation');
+        },
+        error: (err) => {
+          this.procesando.set(false);
+          this.error.set(err?.error?.message ?? 'No pudimos registrar el pago. Intentá de nuevo.');
+        },
+      });
   }
 
   reset(): void {
