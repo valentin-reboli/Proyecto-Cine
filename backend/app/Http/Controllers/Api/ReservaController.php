@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asiento;
+use App\Models\Cliente;
 use App\Models\Funcion;
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
@@ -55,6 +56,7 @@ class ReservaController extends Controller
                     new OA\Property(property: 'invitado_nombre', type: 'string', maxLength: 255, example: 'Ana'),
                     new OA\Property(property: 'invitado_correo', type: 'string', format: 'email', example: 'ana@x.com'),
                     new OA\Property(property: 'invitado_telefono', type: 'string', maxLength: 30, nullable: true),
+                    new OA\Property(property: 'acepta_marketing', type: 'boolean', nullable: true, description: 'Si acepta recibir publicidad por correo/telefono.'),
                 ]
             )
         ),
@@ -73,6 +75,7 @@ class ReservaController extends Controller
             'invitado_nombre' => ['required', 'string', 'max:255'],
             'invitado_correo' => ['required', 'email', 'max:255'],
             'invitado_telefono' => ['nullable', 'string', 'max:30'],
+            'acepta_marketing' => ['nullable', 'boolean'],
         ]);
 
         $funcion = Funcion::findOrFail($data['funcion_id']);
@@ -91,6 +94,15 @@ class ReservaController extends Controller
 
         try {
             $reserva = DB::transaction(function () use ($data, $funcion, $asientos) {
+                // Contacto para campañas: un registro por correo, siempre con los datos mas recientes.
+                $cliente = Cliente::firstOrNew(['correo' => strtolower($data['invitado_correo'])]);
+                $cliente->nombre = $data['invitado_nombre'];
+                $cliente->telefono = $data['invitado_telefono'] ?? $cliente->telefono;
+                if (array_key_exists('acepta_marketing', $data) && $data['acepta_marketing'] !== null) {
+                    $cliente->acepta_marketing = (bool) $data['acepta_marketing'];
+                }
+                $cliente->save();
+
                 $reserva = Reserva::create([
                     'funcion_id' => $funcion->id,
                     'invitado_nombre' => $data['invitado_nombre'],

@@ -43,6 +43,36 @@ class ReservaFlowTest extends TestCase
         ]);
     }
 
+    public function test_la_reserva_guarda_el_contacto_para_campanias(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asientos = Asiento::where('sala_id', $funcion->sala_id)->get();
+
+        $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id,
+            'asientos' => [$asientos[0]->id],
+            'invitado_nombre' => 'Ana',
+            'invitado_correo' => 'Ana@Test.com',
+            'invitado_telefono' => '3456123456',
+            'acepta_marketing' => true,
+        ])->assertCreated();
+
+        $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id,
+            'asientos' => [$asientos[1]->id],
+            'invitado_nombre' => 'Ana G',
+            'invitado_correo' => 'ana@test.com',
+        ])->assertCreated();
+
+        $this->assertDatabaseCount('clientes', 1);
+        $this->assertDatabaseHas('clientes', [
+            'correo' => 'ana@test.com',
+            'nombre' => 'Ana G',
+            'telefono' => '3456123456',
+            'acepta_marketing' => true,
+        ]);
+    }
+
     public function test_flujo_completo_de_reserva_y_pago(): void
     {
         $funcion = $this->crearFuncion();

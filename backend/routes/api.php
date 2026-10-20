@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CampaniaController;
+use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EntradaController;
 use App\Http\Controllers\Api\EstadoController;
 use App\Http\Controllers\Api\FormatoController;
@@ -65,6 +67,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/reservas', [ReservaController::class, 'admin']);
 
     Route::post('/entradas/validar', [EntradaController::class, 'validar']);
+    Route::get('/clientes', [ClienteController::class, 'index']);
+    Route::get('/campanias', [CampaniaController::class, 'index']);
+    Route::post('/campanias', [CampaniaController::class, 'store']);
+    Route::put('/campanias/{campania}', [CampaniaController::class, 'update']);
+    Route::delete('/campanias/{campania}', [CampaniaController::class, 'destroy']);
+    Route::post('/campanias/{campania}/enviar', [CampaniaController::class, 'enviar']);
+
     Route::get('/usuarios', [UsuarioController::class, 'index']);
     Route::post('/usuarios', [UsuarioController::class, 'store']);
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update']);
