@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
-import { Movie, Showtime } from '../../core/models/movie.model';
+import { ComingSoonMovie, Movie, Showtime } from '../../core/models/movie.model';
 import { Dia, agruparPorDia } from '../../core/utils/funciones';
 
 @Component({
@@ -127,8 +127,9 @@ export class HomeComponent implements OnDestroy {
     return m ? m[1] : null;
   }
 
-  openMovie(movie: Movie): void {
-    this.bookingState.select(movie);
+  // Las entradas se compran solo desde el boton "Comprar entradas": ahi se elige pelicula y funcion.
+  comprar(): void {
+    this.bookingState.clear();
     this.router.navigateByUrl('/reserva');
   }
 
@@ -141,13 +142,29 @@ export class HomeComponent implements OnDestroy {
     this.detalle.set(null);
   }
 
-  comprarFuncion(movie: Movie, funcion: Showtime): void {
-    this.bookingState.select(movie, funcion);
-    this.router.navigateByUrl('/reserva');
+  verProximamente(p: ComingSoonMovie): void {
+    this.detalle.set({
+      id: p.id,
+      title: p.title,
+      poster: p.poster,
+      genre: p.genre,
+      genres: [p.genre],
+      duration: p.duration ?? 0,
+      rating: p.rating ?? '',
+      formats: [],
+      sala: '',
+      todayTimes: [],
+      synopsis: p.synopsis,
+      backdrop: p.backdrop,
+      trailer: p.trailer,
+      releaseDate: p.releaseDate,
+    });
   }
 
-  openHeroMovie(): void {
-    const movie = this.heroMovie();
-    if (movie) this.openMovie(movie);
+  fechaLabel(iso: string | undefined): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.slice(0, 10).split('-');
+    return `${d}/${m}/${y}`;
   }
+
 }

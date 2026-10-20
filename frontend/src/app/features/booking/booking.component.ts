@@ -6,10 +6,10 @@ import qrcode from 'qrcode-generator';
 import { API_URL } from '../../core/services/api.config';
 import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
-import { Showtime } from '../../core/models/movie.model';
+import { Movie, Showtime } from '../../core/models/movie.model';
 import { Dia, agruparPorDia } from '../../core/utils/funciones';
 
-type Step = 'funcion' | 'seats' | 'datos' | 'payment' | 'confirmation';
+type Step = 'pelicula' | 'funcion' | 'seats' | 'datos' | 'payment' | 'confirmation';
 type PaymentMethodKey = 'tarjeta' | 'mercadopago';
 
 interface ApiAsiento {
@@ -31,8 +31,9 @@ interface ProgressStep {
 }
 
 const MAX_SEATS = 8;
-const STEP_ORDER: Step[] = ['funcion', 'seats', 'datos', 'payment'];
+const STEP_ORDER: Step[] = ['pelicula', 'funcion', 'seats', 'datos', 'payment'];
 const STEP_LABELS: Record<Step, string> = {
+  pelicula: 'Película',
   funcion: 'Función',
   seats: 'Butacas',
   datos: 'Tus datos',
@@ -53,12 +54,18 @@ export class BookingComponent implements OnInit {
 
   readonly selection = this.bookingState.selection;
 
+  // Peliculas en cartelera que tienen funciones por venir.
+  readonly cargandoCatalogo = this.catalog.loading;
+  readonly peliculas = computed(() =>
+    this.catalog.movies().filter((m) => agruparPorDia(m.todayTimes).length > 0),
+  );
+
   readonly paymentMethods: { key: PaymentMethodKey; label: string }[] = [
     { key: 'tarjeta', label: 'Tarjeta de crédito / débito' },
     { key: 'mercadopago', label: 'Mercado Pago' },
   ];
 
-  readonly step = signal<Step>('funcion');
+  readonly step = signal<Step>('pelicula');
   readonly asientos = signal<ApiAsiento[]>([]);
   readonly cargandoAsientos = signal(false);
   readonly selectedSeats = signal<number[]>([]);
@@ -113,14 +120,8 @@ export class BookingComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const sel = this.selection();
-    if (!sel) {
-      this.router.navigateByUrl('/');
-    } else if (sel.showtime?.funcionId) {
-      // Vino desde la ficha de la pelicula con la funcion ya elegida.
-      this.cargarAsientos(sel.showtime);
-      this.step.set('seats');
-    }
+    // Siempre se arranca eligiendo la pelicula.
+    this.bookingState.clear();
   }
 
   langLabel(f: Showtime): string {
@@ -136,7 +137,14 @@ export class BookingComponent implements OnInit {
     return dia?.label ?? f.date ?? '';
   }
 
-  // --- Paso 1: elegir funcion ---
+  // --- Paso 1: elegir pelicula ---
+
+  elegirPelicula(movie: Movie): void {
+    this.bookingState.select(movie);
+    this.step.set('funcion');
+  }
+
+  // --- Paso 2: elegir funcion ---
 
   elegirFuncion(f: Showtime): void {
     const sel = this.selection();

@@ -52,7 +52,12 @@ export function mapToComingSoonMovie(p: ApiPelicula): ComingSoonMovie {
     title: p.titulo,
     poster: p.poster_url ?? '',
     genre: p.genero?.nombre ?? 'Sin género',
-    releaseDate: p.fecha_estreno ?? '',
+    releaseDate: p.fecha_estreno?.slice(0, 10) ?? '',
+    duration: p.duracion_min,
+    rating: p.clasificacion ?? undefined,
+    synopsis: p.sinopsis ?? undefined,
+    backdrop: p.backdrop_url ?? undefined,
+    trailer: p.trailer_url ?? undefined,
   };
 }
 

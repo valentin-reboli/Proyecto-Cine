@@ -1,4 +1,3 @@
-@if (selection(); as sel) {
   <div class="booking-shell">
     <div class="booking-topbar">
       <button class="btn-back" (click)="handleBack()">‹ Volver</button>
@@ -27,6 +26,31 @@
 
     <div class="booking-body">
       <div class="booking-main">
+        @if (step() === 'pelicula') {
+          <div class="booking-step">
+            <h2>Elegí la película</h2>
+            <p class="step-sub">Primero la película, después el día y el horario.</p>
+            @if (cargandoCatalogo()) {
+              <p class="step-sub">Cargando cartelera…</p>
+            } @else if (peliculas().length === 0) {
+              <p class="step-sub">No hay películas con funciones programadas por el momento.</p>
+            }
+            <div class="pelicula-grid">
+              @for (m of peliculas(); track m.id) {
+                <button type="button" class="pelicula-btn" (click)="elegirPelicula(m)">
+                  <span
+                    class="pelicula-poster"
+                    [style.background-image]="'url(' + m.poster + ')'"
+                    style="background-size: cover; background-position: center"
+                  ></span>
+                  <span class="pelicula-title">{{ m.title }}</span>
+                  <span class="pelicula-meta">{{ m.genre }} · {{ m.duration }} min · {{ m.rating }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        } @else {
+        @if (selection(); as sel) {
         @switch (step()) {
           @case ('funcion') {
             <div class="booking-step">
@@ -159,12 +183,14 @@
             </div>
           }
         }
+        }
+        }
 
         @if (error()) {
           <p class="form-error booking-error">{{ error() }}</p>
         }
 
-        @if (step() !== 'confirmation' && step() !== 'funcion') {
+        @if (step() !== 'confirmation' && step() !== 'funcion' && step() !== 'pelicula') {
           <div class="continue-wrap">
             <button class="btn btn-primary btn-lg" [disabled]="continueDisabled()" (click)="handleContinue()">
               {{ continueLabel() }}
@@ -173,7 +199,8 @@
         }
       </div>
 
-      @if (step() !== 'confirmation') {
+      @if (step() !== 'confirmation' && step() !== 'pelicula') {
+      @if (selection(); as sel) {
         <aside class="booking-sidebar">
           <div class="sidebar-movie">
             <div
@@ -213,6 +240,6 @@
           }
         </aside>
       }
+      }
     </div>
   </div>
-}

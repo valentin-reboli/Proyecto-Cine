@@ -6,7 +6,7 @@
     <a href="#promociones">Promociones</a>
     <a href="#informacion">Información</a>
   </nav>
-  <a href="#cartelera" class="btn btn-primary">Comprar entradas</a>
+  <button type="button" class="btn btn-primary" (click)="comprar()">Comprar entradas</button>
 </header>
 
 @if (heroMovie(); as hero) {
@@ -45,7 +45,7 @@
       <p class="hero-synopsis">{{ hero.synopsis }}</p>
     }
     <div class="hero-actions">
-      <button class="btn btn-primary btn-lg" (click)="openHeroMovie()">
+      <button class="btn btn-primary btn-lg" (click)="comprar()">
         Comprar entradas
       </button>
       <button class="btn-link" (click)="verDetalle(hero)">Más información</button>
@@ -135,13 +135,13 @@
   <h2>Próximamente</h2>
   <div class="coming-soon-grid">
     @for (movie of comingSoon(); track movie.id) {
-      <div class="coming-soon-card">
+      <div class="coming-soon-card" (click)="verProximamente(movie)">
         <div
           class="coming-soon-poster"
           [style.background-image]="'url(' + movie.poster + ')'"
           style="background-size: cover; background-position: center"
         >
-          <span class="release-badge">{{ movie.releaseDate }}</span>
+          <span class="release-badge">{{ fechaLabel(movie.releaseDate) }}</span>
         </div>
         <div>
           <h3>{{ movie.title }}</h3>
@@ -222,8 +222,9 @@
         <div class="detalle-info">
           <h2>{{ m.title }}</h2>
           <div class="meta-row">
-            <span>{{ m.genre }}</span><span class="dot">·</span><span>{{ m.duration }} min</span>
-            <span class="dot">·</span><span class="tag tag-outline">{{ m.rating }}</span>
+            <span>{{ m.genre }}</span>
+            @if (m.duration) { <span class="dot">·</span><span>{{ m.duration }} min</span> }
+            @if (m.rating) { <span class="dot">·</span><span class="tag tag-outline">{{ m.rating }}</span> }
             @for (format of m.formats; track format) {
               <span class="tag">{{ format }}</span>
             }
@@ -246,22 +247,30 @@
         </div>
       }
 
-      <h3 class="detalle-funciones-title">Funciones</h3>
-      @if (detalleDias().length === 0) {
-        <p class="detalle-vacio">Todavía no hay funciones programadas.</p>
-      }
-      @for (dia of detalleDias(); track dia.fecha) {
-        <div class="detalle-dia">
-          <span class="detalle-dia-label">{{ dia.label }}</span>
-          <div class="detalle-chips">
-            @for (f of dia.funciones; track f.funcionId) {
-              <button type="button" class="detalle-chip" (click)="comprarFuncion(m, f)">
-                <strong>{{ f.time }}</strong>
-                <span>{{ f.format }} · {{ langLabel(f) }}</span>
-                <span>{{ formatPrice(f.price ?? 0) }}</span>
-              </button>
-            }
+      @if (m.releaseDate) {
+        <h3 class="detalle-funciones-title">Estreno</h3>
+        <p class="detalle-estreno">{{ fechaLabel(m.releaseDate) }}</p>
+      } @else {
+        <h3 class="detalle-funciones-title">Funciones</h3>
+        @if (detalleDias().length === 0) {
+          <p class="detalle-vacio">Todavía no hay funciones programadas.</p>
+        }
+        @for (dia of detalleDias(); track dia.fecha) {
+          <div class="detalle-dia">
+            <span class="detalle-dia-label">{{ dia.label }}</span>
+            <div class="detalle-chips">
+              @for (f of dia.funciones; track f.funcionId) {
+                <div class="detalle-chip">
+                  <strong>{{ f.time }}</strong>
+                  <span>{{ f.format }} · {{ langLabel(f) }}</span>
+                  <span>{{ formatPrice(f.price ?? 0) }}</span>
+                </div>
+              }
+            </div>
           </div>
+        }
+        <div class="detalle-comprar">
+          <button type="button" class="btn btn-primary" (click)="comprar()">Comprar entradas</button>
         </div>
       }
     </div>

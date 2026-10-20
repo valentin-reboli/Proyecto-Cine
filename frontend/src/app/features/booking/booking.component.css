@@ -8,3 +8,9 @@
 .check-row { flex-direction: row !important; align-items: flex-start; gap: 10px !important; font-weight: 400 !important; }
 .check-row input { width: auto; margin-top: 3px; }
 .qr-img { width: 220px; height: 220px; image-rendering: pixelated; margin: 16px auto; display: block; background: #fff; padding: 8px; border-radius: 8px; }
+.pelicula-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; margin-top: 18px; }
+.pelicula-btn { display: flex; flex-direction: column; gap: 6px; padding: 0; background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius-md); color: var(--text-primary); cursor: pointer; text-align: left; overflow: hidden; font-family: var(--font-body); }
+.pelicula-btn:hover { border-color: var(--accent); }
+.pelicula-poster { display: block; aspect-ratio: 2 / 3; background-color: var(--surface-alt); }
+.pelicula-title { padding: 0 10px; font-weight: 600; font-size: 14px; }
+.pelicula-meta { padding: 0 10px 10px; font-size: 11px; color: var(--text-secondary); }

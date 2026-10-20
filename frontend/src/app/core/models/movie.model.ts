@@ -26,6 +26,7 @@ export interface Movie {
   synopsis?: string;
   backdrop?: string;
   trailer?: string;
+  releaseDate?: string;
 }
 
 export interface ComingSoonMovie {
@@ -34,6 +35,11 @@ export interface ComingSoonMovie {
   poster: string;
   genre: string;
   releaseDate: string;
+  duration?: number;
+  rating?: string;
+  synopsis?: string;
+  backdrop?: string;
+  trailer?: string;
 }
 
 export interface Promotion {
