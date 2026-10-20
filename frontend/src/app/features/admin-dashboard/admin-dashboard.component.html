@@ -2,6 +2,8 @@
   <header class="site-header">
     <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
     <nav class="main-nav">
+      <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
+      <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
       <a routerLink="/">Ver sitio</a>
     </nav>
     <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
@@ -11,7 +13,7 @@
     <div class="admin-toolbar">
       <div>
         <p class="eyebrow">Panel de administrador</p>
-        <h1>Cartelera</h1>
+        <h1>{{ vista === 'configuracion' ? 'Configuración' : 'Cartelera' }}</h1>
       </div>
     </div>
 
@@ -22,6 +24,7 @@
       <p class="admin-error">{{ error() }}</p>
     }
 
+    @if (vista === 'cartelera') {
     <div class="admin-filtros">
       <input
         type="search"
@@ -226,8 +229,9 @@
           }
         }
       </section>
-
-      <!-- USUARIOS -->
+    }
+    } @else {
+      <!-- CONFIGURACION: USUARIOS -->
       <section class="admin-section">
         <div class="admin-section-head">
           <h2>Usuarios del panel <span class="admin-count">({{ usuarios().length }})</span></h2>
@@ -245,14 +249,26 @@
                 <th>Nombre</th>
                 <th>Email</th>
                 <th>Alta</th>
+                <th class="col-acciones">Acciones</th>
               </tr>
             </thead>
             <tbody>
               @for (u of usuarios(); track u.id) {
                 <tr>
-                  <td>{{ u.name }}</td>
+                  <td>
+                    {{ u.name }}
+                    @if (u.id === miId()) {
+                      <span class="admin-count">(vos)</span>
+                    }
+                  </td>
                   <td>{{ u.email }}</td>
                   <td>{{ u.created_at | date: 'dd/MM/yyyy' }}</td>
+                  <td class="col-acciones">
+                    <button type="button" class="btn-link" (click)="abrirEdicionUsuario(u)">Editar</button>
+                    <button type="button" class="btn-link" (click)="abrirCambioPassword(u)">
+                      Cambiar contraseña
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -324,6 +340,91 @@
             <button type="button" class="btn-back" (click)="cerrarFormUsuario()">Cancelar</button>
             <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
               {{ guardandoUsuario() ? 'Creando…' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (usuarioEditando()) {
+    <div class="admin-modal-backdrop" (click)="cerrarEdicionUsuario()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>Editar usuario</h2>
+
+        <form class="admin-form" (ngSubmit)="guardarEdicionUsuario()">
+          <label class="field">
+            <span class="field-label">Nombre *</span>
+            <input type="text" name="name" [(ngModel)]="formEdicion.name" [class.field-invalid]="erroresUsuario()['name']" />
+            @if (erroresUsuario()['name']) {
+              <span class="field-error">{{ erroresUsuario()['name'] }}</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Email *</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="off"
+              [(ngModel)]="formEdicion.email"
+              [class.field-invalid]="erroresUsuario()['email']"
+            />
+            @if (erroresUsuario()['email']) {
+              <span class="field-error">{{ erroresUsuario()['email'] }}</span>
+            }
+          </label>
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarEdicionUsuario()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
+              {{ guardandoUsuario() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (usuarioPassword(); as usuario) {
+    <div class="admin-modal-backdrop" (click)="cerrarCambioPassword()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>Cambiar contraseña</h2>
+        <p class="admin-modal-sub">{{ usuario.name }} · {{ usuario.email }}</p>
+
+        <form class="admin-form" (ngSubmit)="guardarPassword()">
+          <label class="field">
+            <span class="field-label">Nueva contraseña *</span>
+            <input
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              [(ngModel)]="formPassword.password"
+              [class.field-invalid]="erroresUsuario()['password']"
+            />
+            @if (erroresUsuario()['password']) {
+              <span class="field-error">{{ erroresUsuario()['password'] }}</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Repetir contraseña *</span>
+            <input
+              type="password"
+              name="password_confirmation"
+              autocomplete="new-password"
+              [(ngModel)]="formPassword.password_confirmation"
+              [class.field-invalid]="erroresUsuario()['password_confirmation']"
+            />
+            @if (erroresUsuario()['password_confirmation']) {
+              <span class="field-error">{{ erroresUsuario()['password_confirmation'] }}</span>
+            }
+          </label>
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarCambioPassword()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
+              {{ guardandoUsuario() ? 'Guardando…' : 'Guardar' }}
             </button>
           </div>
         </form>

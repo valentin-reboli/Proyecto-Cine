@@ -48,4 +48,65 @@ class UsuarioTest extends TestCase
 
         $this->assertDatabaseCount('users', 0);
     }
+
+    public function test_cambiar_la_contraseña_cierra_las_otras_sesiones_pero_no_la_actual(): void
+    {
+        $admin = User::factory()->create();
+        $tokenAdmin = $admin->createToken('admin')->plainTextToken;
+        $admin->createToken('otra-pc');
+
+        $this->withToken($tokenAdmin)
+            ->putJson("/api/usuarios/{$admin->id}/password", [
+                'password' => 'nueva-clave',
+                'password_confirmation' => 'nueva-clave',
+            ])
+            ->assertNoContent();
+
+        $this->assertTrue(Hash::check('nueva-clave', $admin->fresh()->password));
+        $this->assertSame(1, $admin->tokens()->count());
+        $this->withToken($tokenAdmin)->getJson('/api/usuarios')->assertOk();
+    }
+
+    public function test_el_admin_cambia_la_contraseña_de_otro_usuario(): void
+    {
+        $otro = User::factory()->create();
+        $otro->createToken('admin');
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->putJson("/api/usuarios/{$otro->id}/password", ['password' => 'corta', 'password_confirmation' => 'corta'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
+
+        $this->putJson("/api/usuarios/{$otro->id}/password", [
+            'password' => 'nueva-clave',
+            'password_confirmation' => 'nueva-clave',
+        ])->assertNoContent();
+
+        $this->assertTrue(Hash::check('nueva-clave', $otro->fresh()->password));
+        $this->assertSame(0, $otro->tokens()->count());
+    }
+
+    public function test_se_edita_nombre_y_email_sin_pisar_el_de_otro_usuario(): void
+    {
+        $usuario = User::factory()->create(['email' => 'viejo@cineconcordia.com']);
+        User::factory()->create(['email' => 'ocupado@cineconcordia.com']);
+
+        Sanctum::actingAs($usuario);
+
+        $this->putJson("/api/usuarios/{$usuario->id}", ['name' => 'Naza', 'email' => 'ocupado@cineconcordia.com'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+
+        // Mismo email que ya tiene: no cuenta como repetido.
+        $this->putJson("/api/usuarios/{$usuario->id}", ['name' => 'Naza', 'email' => 'viejo@cineconcordia.com'])
+            ->assertOk()
+            ->assertJsonPath('name', 'Naza');
+
+        $this->putJson("/api/usuarios/{$usuario->id}", ['name' => 'Naza', 'email' => 'nuevo@cineconcordia.com'])
+            ->assertOk()
+            ->assertJsonPath('email', 'nuevo@cineconcordia.com');
+
+        $this->assertDatabaseHas('users', ['id' => $usuario->id, 'name' => 'Naza', 'email' => 'nuevo@cineconcordia.com']);
+    }
 }

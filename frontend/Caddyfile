@@ -18,6 +18,13 @@
 		}
 	}
 
+	# Si la API no responde, explicarlo en vez de devolver una pagina vacia.
+	handle_errors 502 503 504 {
+		@api path /api/* /docs /docs/*
+		header @api Content-Type application/json
+		respond @api `{"api":"sin respuesta","detalle":"Este servicio no llega a Laravel. BACKEND_URL='{$BACKEND_URL}'. Si es un servicio solo de frontend, poner Root Directory vacio en Railway para usar el Dockerfile de la raiz."}` {err.status_code}
+	}
+
 	# Angular: cualquier ruta que no sea un archivo (/reserva, /admin, ...) carga index.html.
 	handle {
 		root * /srv

@@ -33,9 +33,15 @@ export class LoginComponent {
         this.enviando.set(false);
         this.router.navigateByUrl('/admin');
       },
-      error: () => {
+      error: (err) => {
         this.enviando.set(false);
-        this.error.set('Email o contraseña incorrectos.');
+        // 422 = credenciales mal; cualquier otro error es del servidor o de la conexion
+        // (el codigo ayuda a diagnosticar; el detalle esta en /api/estado).
+        this.error.set(
+          err?.status === 422
+            ? 'Email o contraseña incorrectos.'
+            : `No se pudo conectar con el servidor (error ${err?.status || 'de red'}). Probá de nuevo en un rato.`,
+        );
       },
     });
   }
