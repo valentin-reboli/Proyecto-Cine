@@ -1,0 +1,169 @@
+<div class="admin-page">
+  <header class="site-header">
+    <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+    <nav class="main-nav">
+      <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
+      <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
+      <a routerLink="/admin/campanias" routerLinkActive="activo">Campañas</a>
+      <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
+      <a routerLink="/">Ver sitio</a>
+    </nav>
+    <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-toolbar">
+      <div>
+        <p class="eyebrow">Panel de administrador</p>
+        <h1>Campañas</h1>
+      </div>
+    </div>
+
+    @if (aviso()) { <p class="admin-aviso">{{ aviso() }}</p> }
+    @if (error()) { <p class="admin-error">{{ error() }}</p> }
+
+    <div class="admin-filtros">
+      <button type="button" class="btn" [class.btn-primary]="tab() === 'campanias'" (click)="tab.set('campanias')">Campañas</button>
+      <button type="button" class="btn" [class.btn-primary]="tab() === 'clientes'" (click)="tab.set('clientes')">
+        Contactos ({{ conPermiso() }} de {{ clientes().length }} aceptan publicidad)
+      </button>
+    </div>
+
+    @if (cargando()) {
+      <p class="admin-loading">Cargando…</p>
+    } @else {
+      @if (tab() === 'campanias') {
+        <section class="admin-section">
+          <div class="admin-section-head">
+            <h2>Campañas <span class="admin-count">({{ campanias().length }})</span></h2>
+            <button type="button" class="btn btn-primary" (click)="abrirNueva()">+ Nueva campaña</button>
+          </div>
+
+          @if (campanias().length === 0) {
+            <p class="admin-empty">Todavía no creaste ninguna campaña.</p>
+          } @else {
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Campaña</th>
+                  <th>Canal</th>
+                  <th>Estado</th>
+                  <th>Envío</th>
+                  <th class="col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of campanias(); track c.id) {
+                  <tr>
+                    <td>
+                      <span class="admin-titulo">{{ c.nombre }}</span>
+                      @if (c.error) { <span class="field-error">{{ c.error }}</span> }
+                    </td>
+                    <td>{{ canalLabel(c.canal) }}</td>
+                    <td>{{ c.estado }}@if (c.estado === 'enviada') { · {{ c.destinatarios }} dest. }</td>
+                    <td>
+                      @if (c.enviada_en) { {{ c.enviada_en | date: 'dd/MM/yyyy HH:mm' }} }
+                      @else if (c.programada_para) { Programada: {{ c.programada_para | date: 'dd/MM/yyyy HH:mm' }} }
+                      @else { — }
+                    </td>
+                    <td class="col-acciones">
+                      @if (c.estado !== 'enviada') {
+                        <button type="button" class="btn-link" (click)="enviar(c)" [disabled]="enviandoId() === c.id">
+                          {{ enviandoId() === c.id ? 'Enviando…' : 'Enviar ahora' }}
+                        </button>
+                        <button type="button" class="btn-link" (click)="abrirEdicion(c)">Editar</button>
+                      }
+                      <button type="button" class="admin-btn-danger" (click)="eliminar(c)">Eliminar</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+      }
+
+      @if (tab() === 'clientes') {
+        <section class="admin-section">
+          <div class="admin-section-head"><h2>Contactos de compradores</h2></div>
+          @if (clientes().length === 0) {
+            <p class="admin-empty">Todavía no hay compradores registrados.</p>
+          } @else {
+            <table class="admin-table">
+              <thead>
+                <tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Acepta publicidad</th></tr>
+              </thead>
+              <tbody>
+                @for (c of clientes(); track c.id) {
+                  <tr>
+                    <td>{{ c.nombre }}</td>
+                    <td>{{ c.correo }}</td>
+                    <td>{{ c.telefono || '—' }}</td>
+                    <td>{{ c.acepta_marketing ? 'Sí' : 'No' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+      }
+    }
+  </main>
+
+  @if (mostrarForm()) {
+    <div class="admin-modal-backdrop" (click)="cerrarForm()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>{{ editandoId() ? 'Editar campaña' : 'Nueva campaña' }}</h2>
+        <form class="admin-form" (ngSubmit)="guardar()">
+          <label class="field">
+            <span class="field-label">Nombre (interno) *</span>
+            <input type="text" name="nombre" [(ngModel)]="form.nombre" [class.field-invalid]="errores()['nombre']" />
+            @if (errores()['nombre']) { <span class="field-error">{{ errores()['nombre'] }}</span> }
+          </label>
+
+          <label class="field">
+            <span class="field-label">Canal *</span>
+            <select name="canal" [(ngModel)]="form.canal">
+              @for (c of canales; track c.value) {
+                <option [ngValue]="c.value">{{ c.label }}</option>
+              }
+            </select>
+            <span class="admin-preview-label">Llegaría a {{ destinatariosPosibles(form.canal) }} cliente(s) que aceptaron publicidad.</span>
+          </label>
+
+          @if (form.canal === 'email') {
+            <label class="field">
+              <span class="field-label">Asunto *</span>
+              <input type="text" name="asunto" [(ngModel)]="form.asunto" [class.field-invalid]="errores()['asunto']" />
+              @if (errores()['asunto']) { <span class="field-error">{{ errores()['asunto'] }}</span> }
+            </label>
+          }
+
+          <label class="field">
+            <span class="field-label">Mensaje *</span>
+            <textarea name="mensaje" rows="5" maxlength="2000" [(ngModel)]="form.mensaje" [class.field-invalid]="errores()['mensaje']"></textarea>
+            @if (errores()['mensaje']) { <span class="field-error">{{ errores()['mensaje'] }}</span> }
+          </label>
+
+          <label class="remember">
+            <input type="checkbox" name="programar" [(ngModel)]="form.programar" />
+            Programar el envío automático
+          </label>
+
+          @if (form.programar) {
+            <label class="field">
+              <span class="field-label">Fecha y hora de envío *</span>
+              <input type="datetime-local" name="fecha_hora" [(ngModel)]="form.fecha_hora" [class.field-invalid]="errores()['fecha_hora']" />
+              @if (errores()['fecha_hora']) { <span class="field-error">{{ errores()['fecha_hora'] }}</span> }
+            </label>
+          }
+
+          <div class="admin-form-actions">
+            <button type="button" class="btn-back" (click)="cerrarForm()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>
