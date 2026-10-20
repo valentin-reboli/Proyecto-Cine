@@ -10,6 +10,10 @@
   margin: 0 auto;
 }
 
+.main-nav a.activo {
+  color: var(--accent);
+}
+
 .admin-toolbar {
   margin-bottom: 20px;
 }
@@ -266,6 +270,12 @@
 .admin-modal h2 {
   font-size: 24px;
   margin: 0 0 24px;
+}
+
+.admin-modal-sub {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: -16px 0 20px;
 }
 
 .admin-form {

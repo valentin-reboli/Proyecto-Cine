@@ -1,9 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { AdminPeliculaService } from '../../core/services/admin-pelicula.service';
+import { AdminUsuarioService } from '../../core/services/admin-usuario.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminPelicula, AdminPeliculaForm, Genero } from '../../core/models/admin-pelicula.model';
+import { AdminUsuario, AdminUsuarioForm, CambioPasswordForm } from '../../core/models/admin-usuario.model';
 
 export const CLASIFICACIONES = ['ATP', '+13', '+16', '+18'];
 
@@ -20,17 +23,29 @@ const FORM_VACIO: AdminPeliculaForm = {
   genero_id: 0,
 };
 
+const FORM_USUARIO_VACIO: AdminUsuarioForm = {
+  name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+};
+
 type Seccion = 'cartelera' | 'proximamente';
+type Vista = 'cartelera' | 'configuracion';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [FormsModule, RouterLink],
+  imports: [DatePipe, FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly peliculaService = inject(AdminPeliculaService);
+  private readonly usuarioService = inject(AdminUsuarioService);
   private readonly auth = inject(AuthService);
+
+  // /admin muestra la cartelera y /admin/configuracion los usuarios (ver app.routes.ts)
+  readonly vista: Vista = inject(ActivatedRoute).snapshot.data['vista'] ?? 'cartelera';
 
   readonly clasificaciones = CLASIFICACIONES;
 
@@ -66,7 +81,29 @@ export class AdminDashboardComponent implements OnInit {
   readonly erroresForm = signal<Record<string, string>>({});
   form: AdminPeliculaForm = { ...FORM_VACIO };
 
+  // Usuarios del panel
+  readonly usuarios = signal<AdminUsuario[]>([]);
+  readonly miId = signal<number | null>(null);
+  readonly mostrarFormUsuario = signal(false);
+  readonly guardandoUsuario = signal(false);
+  readonly erroresUsuario = signal<Record<string, string>>({});
+  formUsuario: AdminUsuarioForm = { ...FORM_USUARIO_VACIO };
+
+  // Cambio de contraseña (null = modal cerrado)
+  readonly usuarioPassword = signal<AdminUsuario | null>(null);
+  formPassword: CambioPasswordForm = { password: '', password_confirmation: '' };
+
+  // Edicion de nombre / email (null = modal cerrado)
+  readonly usuarioEditando = signal<AdminUsuario | null>(null);
+  formEdicion = { name: '', email: '' };
+
   ngOnInit(): void {
+    if (this.vista === 'configuracion') {
+      this.auth.me().subscribe({ next: (yo) => this.miId.set(yo.id) });
+      this.cargarUsuarios();
+      return;
+    }
+
     this.peliculaService.getGeneros().subscribe({
       next: (generos) => this.generos.set(generos),
       error: () => this.error.set('No se pudieron cargar los géneros.'),
@@ -282,6 +319,187 @@ export class AdminDashboardComponent implements OnInit {
       error: () => {
         this.filaProcesando.set(null);
         this.error.set('No se pudo restaurar la película.');
+      },
+    });
+  }
+
+  // --- Usuarios ---
+
+  cargarUsuarios(): void {
+    this.usuarioService.list().subscribe({
+      next: (usuarios) => this.usuarios.set(usuarios),
+      error: () => this.error.set('No se pudieron cargar los usuarios.'),
+    });
+  }
+
+  abrirNuevoUsuario(): void {
+    this.formUsuario = { ...FORM_USUARIO_VACIO };
+    this.erroresUsuario.set({});
+    this.mostrarFormUsuario.set(true);
+  }
+
+  cerrarFormUsuario(): void {
+    if (this.guardandoUsuario()) {
+      return;
+    }
+
+    this.mostrarFormUsuario.set(false);
+  }
+
+  private validarUsuario(): boolean {
+    const errores: Record<string, string> = {};
+    const f = this.formUsuario;
+
+    Object.assign(errores, this.erroresDatos(f), this.erroresPassword(f));
+
+    this.erroresUsuario.set(errores);
+
+    return Object.keys(errores).length === 0;
+  }
+
+  private erroresDatos(f: { name: string; email: string }): Record<string, string> {
+    const errores: Record<string, string> = {};
+
+    if (!f.name.trim()) {
+      errores['name'] = 'El nombre es obligatorio.';
+    }
+    if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) {
+      errores['email'] = 'Ingresá un email válido.';
+    }
+
+    return errores;
+  }
+
+  abrirEdicionUsuario(usuario: AdminUsuario): void {
+    this.formEdicion = { name: usuario.name, email: usuario.email };
+    this.erroresUsuario.set({});
+    this.usuarioEditando.set(usuario);
+  }
+
+  cerrarEdicionUsuario(): void {
+    if (this.guardandoUsuario()) {
+      return;
+    }
+
+    this.usuarioEditando.set(null);
+  }
+
+  guardarEdicionUsuario(): void {
+    const usuario = this.usuarioEditando();
+    const errores = this.erroresDatos(this.formEdicion);
+
+    this.erroresUsuario.set(errores);
+
+    if (!usuario || Object.keys(errores).length > 0) {
+      return;
+    }
+
+    this.guardandoUsuario.set(true);
+    this.error.set('');
+
+    const payload = { name: this.formEdicion.name.trim(), email: this.formEdicion.email.trim() };
+
+    this.usuarioService.update(usuario.id, payload).subscribe({
+      next: () => {
+        this.guardandoUsuario.set(false);
+        this.usuarioEditando.set(null);
+        this.mostrarAviso('Usuario actualizado.');
+        this.cargarUsuarios();
+      },
+      error: (err) => {
+        this.guardandoUsuario.set(false);
+
+        if (err?.error?.errors?.email) {
+          this.erroresUsuario.set({ email: 'Ya existe un usuario con ese email.' });
+        } else {
+          this.error.set(err?.error?.message ?? 'No se pudo actualizar el usuario.');
+        }
+      },
+    });
+  }
+
+  private erroresPassword(f: CambioPasswordForm): Record<string, string> {
+    const errores: Record<string, string> = {};
+
+    if (f.password.length < 8) {
+      errores['password'] = 'La contraseña tiene que tener al menos 8 caracteres.';
+    }
+    if (f.password_confirmation !== f.password) {
+      errores['password_confirmation'] = 'Las contraseñas no coinciden.';
+    }
+
+    return errores;
+  }
+
+  abrirCambioPassword(usuario: AdminUsuario): void {
+    this.formPassword = { password: '', password_confirmation: '' };
+    this.erroresUsuario.set({});
+    this.usuarioPassword.set(usuario);
+  }
+
+  cerrarCambioPassword(): void {
+    if (this.guardandoUsuario()) {
+      return;
+    }
+
+    this.usuarioPassword.set(null);
+  }
+
+  guardarPassword(): void {
+    const usuario = this.usuarioPassword();
+    const errores = this.erroresPassword(this.formPassword);
+
+    this.erroresUsuario.set(errores);
+
+    if (!usuario || Object.keys(errores).length > 0) {
+      return;
+    }
+
+    this.guardandoUsuario.set(true);
+    this.error.set('');
+
+    this.usuarioService.cambiarPassword(usuario.id, this.formPassword).subscribe({
+      next: () => {
+        this.guardandoUsuario.set(false);
+        this.usuarioPassword.set(null);
+        this.mostrarAviso(`Contraseña de ${usuario.email} actualizada.`);
+      },
+      error: (err) => {
+        this.guardandoUsuario.set(false);
+        this.error.set(err?.error?.message ?? 'No se pudo cambiar la contraseña.');
+      },
+    });
+  }
+
+  guardarUsuario(): void {
+    if (!this.validarUsuario()) {
+      return;
+    }
+
+    this.guardandoUsuario.set(true);
+    this.error.set('');
+
+    const payload: AdminUsuarioForm = {
+      ...this.formUsuario,
+      name: this.formUsuario.name.trim(),
+      email: this.formUsuario.email.trim(),
+    };
+
+    this.usuarioService.create(payload).subscribe({
+      next: (usuario) => {
+        this.guardandoUsuario.set(false);
+        this.mostrarFormUsuario.set(false);
+        this.mostrarAviso(`Usuario ${usuario.email} creado. Ya puede iniciar sesión.`);
+        this.cargarUsuarios();
+      },
+      error: (err) => {
+        this.guardandoUsuario.set(false);
+
+        if (err?.error?.errors?.email) {
+          this.erroresUsuario.set({ email: 'Ya existe un usuario con ese email.' });
+        } else {
+          this.error.set(err?.error?.message ?? 'No se pudo crear el usuario.');
+        }
       },
     });
   }

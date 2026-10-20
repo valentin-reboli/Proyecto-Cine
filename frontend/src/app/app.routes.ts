@@ -10,4 +10,10 @@ export const routes: Routes = [
   { path: 'reserva', component: BookingComponent },
   { path: 'login', component: LoginComponent },
   { path: 'admin', component: AdminDashboardComponent, canActivate: [authGuard] },
+  {
+    path: 'admin/configuracion',
+    component: AdminDashboardComponent,
+    canActivate: [authGuard],
+    data: { vista: 'configuracion' },
+  },
 ];

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EntradaController;
+use App\Http\Controllers\Api\EstadoController;
 use App\Http\Controllers\Api\FormatoController;
 use App\Http\Controllers\Api\FuncionController;
 use App\Http\Controllers\Api\GeneroController;
@@ -9,12 +10,15 @@ use App\Http\Controllers\Api\PagoController;
 use App\Http\Controllers\Api\PeliculaController;
 use App\Http\Controllers\Api\ReservaController;
 use App\Http\Controllers\Api\SalaController;
+use App\Http\Controllers\Api\UsuarioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/estado', EstadoController::class);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -61,4 +65,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/reservas', [ReservaController::class, 'admin']);
 
     Route::post('/entradas/validar', [EntradaController::class, 'validar']);
+    Route::get('/usuarios', [UsuarioController::class, 'index']);
+    Route::post('/usuarios', [UsuarioController::class, 'store']);
+    Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update']);
+    Route::put('/usuarios/{usuario}/password', [UsuarioController::class, 'cambiarPassword']);
 });

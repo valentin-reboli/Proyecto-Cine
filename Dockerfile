@@ -30,5 +30,6 @@ RUN composer dump-autoload --optimize \
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 COPY --from=front /app/dist/cine-concordia/browser /srv
 
-ENV BACKEND_URL=http://127.0.0.1:8787
-CMD ["sh", "-c", "caddy run --config /etc/caddy/Caddyfile --adapter caddyfile & PORT=8787 exec sh docker/start.sh"]
+# BACKEND_URL se fija aca para Caddy: si en Railway quedo cargada esa variable
+# (de cuando habia un servicio backend aparte) no tiene que pisar la API local.
+CMD ["sh", "-c", "BACKEND_URL=http://127.0.0.1:8787 caddy run --config /etc/caddy/Caddyfile --adapter caddyfile & PORT=8787 exec sh docker/start.sh"]
