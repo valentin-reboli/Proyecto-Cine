@@ -50,6 +50,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/peliculas/{pelicula}', [PeliculaController::class, 'destroy']);
     Route::post('/peliculas/{pelicula}/restaurar', [PeliculaController::class, 'restaurar']);
 
+    Route::get('/salas/{sala}/asientos', [SalaController::class, 'asientos']);
+    Route::put('/asientos/{asiento}', [SalaController::class, 'actualizarAsiento']);
     Route::post('/salas', [SalaController::class, 'store']);
     Route::put('/salas/{sala}', [SalaController::class, 'update']);
     Route::delete('/salas/{sala}', [SalaController::class, 'destroy']);
@@ -58,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/formatos/{formato}', [FormatoController::class, 'update']);
     Route::delete('/formatos/{formato}', [FormatoController::class, 'destroy']);
 
+    Route::get('/admin/funciones', [FuncionController::class, 'admin']);
     Route::post('/funciones', [FuncionController::class, 'store']);
     Route::put('/funciones/{funcion}', [FuncionController::class, 'update']);
     Route::post('/funciones/{funcion}/cancelar', [FuncionController::class, 'cancelar']);

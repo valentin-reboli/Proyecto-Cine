@@ -69,6 +69,13 @@ class FuncionController extends Controller
             new OA\Response(response: 404, description: 'Funcion no encontrada.'),
         ]
     )]
+    public function admin()
+    {
+        return Funcion::with(['pelicula', 'sala', 'formato'])
+            ->orderByDesc('fecha_hora')
+            ->get();
+    }
+
     public function asientos(Funcion $funcion)
     {
         $estados = ReservaAsiento::where('funcion_id', $funcion->id)
@@ -88,7 +95,7 @@ class FuncionController extends Controller
                 'id' => $asiento->id,
                 'fila' => $asiento->fila,
                 'numero' => $asiento->numero,
-                'estado' => $estados->get($asiento->id, 'disponible'),
+                'estado' => $asiento->activo ? $estados->get($asiento->id, 'disponible') : 'bloqueado',
             ]);
     }
 

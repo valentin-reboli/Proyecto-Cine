@@ -8,6 +8,8 @@ use App\Models\Funcion;
 use App\Models\Genero;
 use App\Models\Pelicula;
 use App\Models\Sala;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -152,5 +154,29 @@ class ReservaFlowTest extends TestCase
             'invitado_correo' => 'beto@test.com',
         ]);
         $otra->assertCreated();
+    }
+
+    public function test_crear_sala_genera_butacas_y_una_butaca_bloqueada_no_se_vende(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $sala = $this->postJson('/api/salas', ['nombre' => 'Sala Nueva', 'filas' => 3, 'butacas_por_fila' => 4])
+            ->assertCreated()->assertJsonPath('asientos_count', 12)->json();
+
+        $asiento = \App\Models\Asiento::where('sala_id', $sala['id'])->first();
+        $this->putJson("/api/asientos/{$asiento->id}", ['activo' => false])->assertOk();
+
+        $funcion = $this->crearFuncion();
+        $funcion->update(['sala_id' => $sala['id']]);
+
+        $this->getJson("/api/funciones/{$funcion->id}/asientos")
+            ->assertJsonFragment(['id' => $asiento->id, 'estado' => 'bloqueado']);
+
+        $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id,
+            'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana',
+            'invitado_correo' => 'ana@test.com',
+        ])->assertUnprocessable();
     }
 }

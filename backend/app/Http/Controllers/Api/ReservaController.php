@@ -92,6 +92,10 @@ class ReservaController extends Controller
             ], 422);
         }
 
+        if ($asientos->contains(fn (Asiento $asiento) => ! $asiento->activo)) {
+            return response()->json(['message' => 'Hay butacas que no estan disponibles para la venta.'], 422);
+        }
+
         try {
             $reserva = DB::transaction(function () use ($data, $funcion, $asientos) {
                 // Contacto para campañas: un registro por correo, siempre con los datos mas recientes.
