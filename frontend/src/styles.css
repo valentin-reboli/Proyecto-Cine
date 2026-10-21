@@ -1131,7 +1131,6 @@ button { font-family: var(--font-body); }
 /* ===== Animaciones ===== */
 @keyframes ccFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ccZoomIn { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
-@keyframes ccKenBurns { from { transform: scale(1.12); } to { transform: scale(1); } }
 @keyframes ccShine { from { left: -60%; } to { left: 130%; } }
 
 /* Aparicion al scrollear (directiva appReveal) */
@@ -1151,9 +1150,7 @@ button { font-family: var(--font-body); }
   translate: 0 0;
 }
 
-/* Portada: zoom lento de la imagen y texto en cascada */
-.hero { overflow: hidden; }
-.hero-slide.active { animation: ccKenBurns 8s ease-out both; }
+/* Portada: texto en cascada */
 .hero-text > * { animation: ccFadeUp 0.7s ease-out both; }
 .hero-text > :nth-child(2) { animation-delay: 0.08s; }
 .hero-text > :nth-child(3) { animation-delay: 0.16s; }
