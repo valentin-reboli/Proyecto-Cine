@@ -34,6 +34,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'dos_pasos_secreto',
     ];
 
     /**
@@ -46,7 +47,15 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'dos_pasos_secreto' => 'encrypted',
+            'dos_pasos_activado_en' => 'datetime',
         ];
+    }
+
+    // Tiene Google Authenticator confirmado: el login pide el codigo de 6 digitos.
+    public function tieneDosPasos(): bool
+    {
+        return $this->dos_pasos_secreto !== null && $this->dos_pasos_activado_en !== null;
     }
 
     public function role()
