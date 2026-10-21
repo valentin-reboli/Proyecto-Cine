@@ -22,6 +22,8 @@
   <div class="hero-scrim-v"></div>
   <div class="hero-scrim-h"></div>
   <div class="hero-content" [attr.data-id]="hero.id">
+    @for (h of [hero]; track h.id) {
+    <div class="hero-text">
     <div class="eyebrow">En cartelera ahora</div>
     <h1 class="hero-title">{{ hero.title }}</h1>
     <div class="meta-row">
@@ -50,6 +52,8 @@
       </button>
       <button class="btn-link" (click)="verDetalle(hero)">Más información</button>
     </div>
+    </div>
+    }
     @if (heroMovies().length > 1) {
       <div class="hero-nav">
         <button type="button" class="hero-arrow" aria-label="Anterior" (click)="anteriorHero()">‹</button>
@@ -71,7 +75,7 @@
 
 <section id="cartelera" class="section">
   <div class="section-head">
-    <h2>Cartelera</h2>
+    <h2 appReveal>Cartelera</h2>
     <div class="filters">
       <input
         type="text"
@@ -99,9 +103,11 @@
   }
 
   <div class="movie-grid">
-    @for (movie of filteredMovies(); track movie.id) {
+    @for (movie of filteredMovies(); track movie.id; let i = $index) {
       <div
         class="movie-card"
+        appReveal
+        [appRevealDelay]="i"
         [id]="'movie-' + movie.id"
         (click)="verDetalle(movie)"
       >
@@ -132,10 +138,10 @@
 </section>
 
 <section id="proximamente" class="section">
-  <h2>Próximamente</h2>
+  <h2 appReveal>Próximamente</h2>
   <div class="coming-soon-grid">
-    @for (movie of comingSoon(); track movie.id) {
-      <div class="coming-soon-card" (click)="verProximamente(movie)">
+    @for (movie of comingSoon(); track movie.id; let i = $index) {
+      <div class="coming-soon-card" appReveal [appRevealDelay]="i" (click)="verProximamente(movie)">
         <div
           class="coming-soon-poster"
           [style.background-image]="'url(' + movie.poster + ')'"
@@ -153,10 +159,10 @@
 </section>
 
 <section id="promociones" class="section section-alt">
-  <h2>Promociones</h2>
+  <h2 appReveal>Promociones</h2>
   <div class="promo-grid">
-    @for (promo of promotions; track promo.title) {
-      <div class="promo-card">
+    @for (promo of promotions; track promo.title; let i = $index) {
+      <div class="promo-card" appReveal [appRevealDelay]="i">
         <div class="promo-tag">{{ promo.tag }}</div>
         <h3>{{ promo.title }}</h3>
         <p class="promo-desc">{{ promo.description }}</p>
@@ -166,7 +172,7 @@
 </section>
 
 <section id="informacion" class="section info-section">
-  <div class="info-text">
+  <div class="info-text" appReveal>
     <h2>Información</h2>
     <div class="info-list">
       <div>
@@ -193,6 +199,8 @@
   </div>
   <iframe
     class="info-map"
+    appReveal
+    [appRevealDelay]="1"
     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3405.5528185626727!2d-58.01976552353789!3d-31.398891674269716!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95ade807c77aaaab%3A0xd8d82b7baa267a3a!2sCarlos%20Pellegrini%20550%2C%20E3200%20Concordia%2C%20Entre%20R%C3%ADos!5e0!3m2!1ses-419!2sar!4v1786807507072!5m2!1ses-419!2sar"
     width="600"
     height="450"

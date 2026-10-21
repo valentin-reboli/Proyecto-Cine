@@ -1127,3 +1127,97 @@ button { font-family: var(--font-body); }
   font-weight: 800;
   color: var(--accent);
 }
+
+/* ===== Animaciones ===== */
+@keyframes ccFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ccZoomIn { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes ccKenBurns { from { transform: scale(1.12); } to { transform: scale(1); } }
+@keyframes ccShine { from { left: -60%; } to { left: 130%; } }
+
+/* Aparicion al scrollear (directiva appReveal) */
+.reveal {
+  opacity: 0;
+  translate: 0 28px;
+  /* usa translate (no transform) para no pisar el hover de las tarjetas */
+  transition:
+    opacity 0.7s ease var(--reveal-delay, 0ms),
+    translate 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms),
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* Portada: zoom lento de la imagen y texto en cascada */
+.hero { overflow: hidden; }
+.hero-slide.active { animation: ccKenBurns 8s ease-out both; }
+.hero-text > * { animation: ccFadeUp 0.7s ease-out both; }
+.hero-text > :nth-child(2) { animation-delay: 0.08s; }
+.hero-text > :nth-child(3) { animation-delay: 0.16s; }
+.hero-text > :nth-child(4) { animation-delay: 0.24s; }
+.hero-text > :nth-child(5) { animation-delay: 0.32s; }
+
+/* Tarjetas: zoom del poster al pasar el mouse */
+.movie-poster,
+.coming-soon-poster {
+  transition: transform 0.5s ease, filter 0.5s ease;
+}
+.movie-card:hover .movie-poster {
+  transform: scale(1.06);
+  filter: brightness(1.08);
+}
+.coming-soon-card:hover .coming-soon-poster {
+  filter: brightness(1.12);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.promo-card:hover { box-shadow: 0 14px 30px rgba(206, 50, 52, 0.18); }
+
+/* Boton principal: brillo que cruza al pasar el mouse */
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+.btn-primary:not(:disabled):hover::after { animation: ccShine 0.8s ease; }
+
+/* Links del menu con subrayado animado */
+.main-nav a { position: relative; }
+.main-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
+}
+.main-nav a:hover::after,
+.main-nav a.activo::after { transform: scaleX(1); }
+
+/* Ficha de pelicula (modal) */
+.detalle-backdrop { animation: ccFadeIn 0.25s ease-out; }
+.detalle { animation: ccZoomIn 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+  .reveal { opacity: 1; translate: none; }
+}

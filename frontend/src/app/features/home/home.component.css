@@ -41,3 +41,29 @@
   .detalle-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
   .detalle-chip { flex: 0 0 auto; }
 }
+
+/* Contenido centrado en la pagina publica (titulos, tarjetas e informacion); el hero queda a la izquierda. */
+.section h2 { text-align: center; }
+.section-head { flex-direction: column; align-items: center; }
+.filters { justify-content: center; }
+
+.movie-body,
+.promo-card,
+.coming-soon-card { align-items: center; text-align: center; }
+.movie-meta,
+.movie-langs { justify-content: center; }
+
+.info-section { align-items: center; text-align: center; gap: 48px; }
+.info-text { flex: 1 1 320px; }
+.info-map { flex: 1.6 1 480px; height: 460px; }
+@media (max-width: 600px) {
+  .info-map { height: 340px; min-height: 0; }
+}
+.info-list { margin: 0 auto; }
+.social-links { justify-content: center; }
+
+.detalle-info { text-align: center; }
+.detalle-chips { justify-content: center; }
+.detalle-chip { align-items: center; text-align: center; }
+
+.site-footer { justify-content: center; text-align: center; }

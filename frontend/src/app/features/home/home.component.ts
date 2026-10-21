@@ -6,10 +6,11 @@ import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
 import { ComingSoonMovie, Movie, Showtime } from '../../core/models/movie.model';
 import { Dia, agruparPorDia } from '../../core/utils/funciones';
+import { RevealDirective } from '../../core/directives/reveal.directive';
 
 @Component({
   selector: 'app-home',
-  imports: [FormsModule],
+  imports: [FormsModule, RevealDirective],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
