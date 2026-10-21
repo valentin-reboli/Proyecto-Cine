@@ -39,6 +39,15 @@ export class AuthService {
     );
   }
 
+  loginWithGoogle(credential: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${API_URL}/login/google`, { credential }).pipe(
+      tap((res) => {
+        localStorage.setItem(TOKEN_KEY, res.token);
+        this.isLoggedIn.set(true);
+      }),
+    );
+  }
+
   // Usuario dueño del token actual (GET /api/user).
   me(): Observable<AdminUser> {
     return this.http.get<AdminUser>(`${API_URL}/user`);

@@ -1,7 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
+
+declare const google: any;
 
 @Component({
   selector: 'app-login',
@@ -9,7 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -19,6 +22,48 @@ export class LoginComponent {
 
   readonly enviando = signal(false);
   readonly error = signal('');
+
+  ngAfterViewInit(): void {
+    this.loadGoogleScript(() => this.setupGoogleButton());
+  }
+
+  private loadGoogleScript(onReady: () => void): void {
+    if (typeof google !== 'undefined') {
+      onReady();
+      return;
+    }
+
+    const existing = document.getElementById('google-identity-script');
+    if (existing) {
+      existing.addEventListener('load', onReady);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-identity-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = onReady;
+    document.head.appendChild(script);
+  }
+
+  private setupGoogleButton(): void {
+    google.accounts.id.initialize({
+      client_id: environment.googleClientId,
+      callback: (response: { credential: string }) => this.ingresarConGoogle(response.credential),
+    });
+
+    const container = document.getElementById('google-btn');
+    if (container) {
+      google.accounts.id.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        width: 320,
+        text: 'signin_with',
+      });
+    }
+  }
 
   toggleVerPassword(): void {
     this.verPassword = !this.verPassword;
@@ -42,6 +87,23 @@ export class LoginComponent {
             ? 'Email o contraseña incorrectos.'
             : `No se pudo conectar con el servidor (error ${err?.status || 'de red'}). Probá de nuevo en un rato.`,
         );
+      },
+    });
+  }
+
+  ingresarConGoogle(credential: string): void {
+    this.enviando.set(true);
+    this.error.set('');
+
+    this.auth.loginWithGoogle(credential).subscribe({
+      next: () => {
+        this.enviando.set(false);
+        this.router.navigateByUrl('/admin');
+      },
+      error: (err) => {
+        this.enviando.set(false);
+        // El backend explica el motivo (token invalido, otra app, email sin cuenta de admin).
+        this.error.set(err?.error?.message || 'No se pudo iniciar sesion con esa cuenta de Google.');
       },
     });
   }
