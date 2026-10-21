@@ -26,6 +26,7 @@ Route::get('/user', function (Request $request) {
 Route::get('/estado', EstadoController::class);
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login/google', [AuthController::class, 'loginWithGoogle']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 // Catálogo público (cartelera, próximamente y funciones de cada película)

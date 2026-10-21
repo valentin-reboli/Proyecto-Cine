@@ -57,3 +57,22 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Autenticación con Google (Inicio de sesión con Google)
+
+Este proyecto soporta inicio de sesión con Google (OAuth 2.0). A continuación se detalla cómo configurar y la variable de entorno utilizada:
+
+- Variable de entorno usada: `GOOGLE_CLIENT_ID`
+  - En el backend se lee desde `config/services.php`: `\'google\' => [\n        \'client_id\' => env(\'GOOGLE_CLIENT_ID\'),\n    ],`
+  - Ejemplo en `backend/.env`: `GOOGLE_CLIENT_ID=726005561602-6d6gt404cpg3l7bhdonf0fravb5arlp0.apps.googleusercontent.com`
+  - Nota: esto es el Client ID de OAuth (no es una "API key" secreta). El Client ID es público y se utiliza en el frontend para inicializar el flujo de autenticación.
+
+Pasos rápidos para configurar:
+
+1. En Google Cloud Console crea un OAuth 2.0 Client ID (Tipo: Web application).
+2. Configura los "Authorized JavaScript origins" (ej. `http://localhost:4200`) y "Authorized redirect URIs" si usas callbacks desde el backend.
+3. Copia el Client ID y colócalo en el archivo `backend/.env` (o en el entorno de producción) como `GOOGLE_CLIENT_ID=tu_client_id`.
+4. Verifica que `backend/config/services.php` incluye `'google' => ['client_id' => env('GOOGLE_CLIENT_ID'),].`
+
+Si se necesita documentación para el frontend (ej. cómo usar Google Identity Services en Angular), indicar y se agrega un ejemplo de implementación.
+

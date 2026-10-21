@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
@@ -45,6 +46,74 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $credentials['email'])->firstOrFail();
+        $token = $user->createToken('admin')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ]);
+    }
+
+    #[OA\Post(
+        path: '/api/login/google',
+        summary: 'Iniciar sesion con Google (admin)',
+        description: 'Verifica el ID token que devuelve Google Identity Services y, si el email coincide con un admin ya registrado, devuelve un token de Sanctum. No crea cuentas nuevas.',
+        tags: ['Autenticacion'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['credential'],
+                properties: [
+                    new OA\Property(property: 'credential', type: 'string', description: 'ID token (JWT) devuelto por el boton de Google.'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Login exitoso, devuelve user y token.'),
+            new OA\Response(response: 422, description: 'Token invalido, no verificado, o sin cuenta de admin asociada.'),
+        ]
+    )]
+    public function loginWithGoogle(Request $request)
+    {
+        $data = $request->validate([
+            'credential' => ['required', 'string'],
+        ]);
+
+        // Google valida la firma/expiracion del JWT y nos devuelve el payload
+        // ya verificado. Evita sumar una dependencia nueva solo para validar
+        // JWT a mano.
+        $response = Http::get('https://oauth2.googleapis.com/tokeninfo', [
+            'id_token' => $data['credential'],
+        ]);
+
+        if (! $response->ok()) {
+            throw ValidationException::withMessages([
+                'credential' => ['El token de Google no es valido o expiro.'],
+            ]);
+        }
+
+        $payload = $response->json();
+
+        if (($payload['aud'] ?? null) !== config('services.google.client_id')) {
+            throw ValidationException::withMessages([
+                'credential' => ['El token de Google no corresponde a esta aplicacion.'],
+            ]);
+        }
+
+        if (($payload['email_verified'] ?? 'false') !== 'true') {
+            throw ValidationException::withMessages([
+                'credential' => ['El email de Google no esta verificado.'],
+            ]);
+        }
+
+        $user = User::where('email', $payload['email'])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'credential' => ['No existe una cuenta de administrador con ese email de Google.'],
+            ]);
+        }
+
         $token = $user->createToken('admin')->plainTextToken;
 
         return response()->json([
