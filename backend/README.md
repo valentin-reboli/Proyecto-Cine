@@ -64,7 +64,7 @@ Este proyecto soporta inicio de sesión con Google (OAuth 2.0). A continuación 
 
 - Variable de entorno usada: `GOOGLE_CLIENT_ID`
   - En el backend se lee desde `config/services.php`: `\'google\' => [\n        \'client_id\' => env(\'GOOGLE_CLIENT_ID\'),\n    ],`
-  - Ejemplo en `backend/.env`: `GOOGLE_CLIENT_ID=726005561602-6d6gt404cpg3l7bhdonf0fravb5arlp0.apps.googleusercontent.com`
+  - Ejemplo en `backend/.env`: `GOOGLE_CLIENT_ID=303445118007-ldr48kf6mm487cdi5f7h5vdeal9to7ap.apps.googleusercontent.com`
   - Nota: esto es el Client ID de OAuth (no es una "API key" secreta). El Client ID es público y se utiliza en el frontend para inicializar el flujo de autenticación.
 
 Pasos rápidos para configurar:
