@@ -11,9 +11,12 @@ export interface AdminUser {
   email: string;
 }
 
-interface LoginResponse {
-  user: AdminUser;
-  token: string;
+// Si el usuario tiene Google Authenticator, la primera respuesta trae solo requiere_codigo
+// y hay que repetir el login mandando el codigo de 6 digitos.
+export interface LoginResponse {
+  user?: AdminUser;
+  token?: string;
+  requiere_codigo?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,22 +33,23 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${API_URL}/login`, { email, password }).pipe(
-      tap((res) => {
-        localStorage.setItem(TOKEN_KEY, res.token);
-        this.isLoggedIn.set(true);
-      }),
-    );
+  login(email: string, password: string, codigo?: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${API_URL}/login`, { email, password, codigo })
+      .pipe(tap((res) => this.guardarSesion(res)));
   }
 
-  loginWithGoogle(credential: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${API_URL}/login/google`, { credential }).pipe(
-      tap((res) => {
-        localStorage.setItem(TOKEN_KEY, res.token);
-        this.isLoggedIn.set(true);
-      }),
-    );
+  loginWithGoogle(credential: string, codigo?: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${API_URL}/login/google`, { credential, codigo })
+      .pipe(tap((res) => this.guardarSesion(res)));
+  }
+
+  private guardarSesion(res: LoginResponse): void {
+    if (res.token) {
+      localStorage.setItem(TOKEN_KEY, res.token);
+      this.isLoggedIn.set(true);
+    }
   }
 
   // Usuario dueño del token actual (GET /api/user).

@@ -13,44 +13,76 @@
         <p class="login-error">{{ error() }}</p>
       }
 
-      <form class="login-form" (ngSubmit)="ingresar()">
-        <label class="field">
-          <span class="field-label">Email</span>
-          <input
-            type="email"
-            name="email"
-            placeholder="tu@email.com"
-            autocomplete="email"
-            [(ngModel)]="email"
-            required
-          />
-        </label>
-
-        <label class="field">
-          <span class="field-label">Contrase&ntilde;a</span>
-          <span class="password-wrap">
+      <!-- Con [hidden] (y no @if) para no perder el boton de Google que se dibuja una sola vez -->
+      <div [hidden]="pideCodigo()">
+        <form class="login-form" (ngSubmit)="ingresar()">
+          <label class="field">
+            <span class="field-label">Email</span>
             <input
-              [type]="verPassword ? 'text' : 'password'"
-              name="password"
-              placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
-              autocomplete="current-password"
-              [(ngModel)]="password"
+              type="email"
+              name="email"
+              placeholder="tu@email.com"
+              autocomplete="email"
+              [(ngModel)]="email"
               required
             />
-            <button type="button" class="toggle-pass" (click)="toggleVerPassword()">
-              {{ verPassword ? 'Ocultar' : 'Ver' }}
-            </button>
-          </span>
-        </label>
+          </label>
 
-        <button type="submit" class="btn btn-primary btn-lg" [disabled]="enviando()">
-          {{ enviando() ? 'Ingresando…' : 'Ingresar' }}
-        </button>
-      </form>
+          <label class="field">
+            <span class="field-label">Contrase&ntilde;a</span>
+            <span class="password-wrap">
+              <input
+                [type]="verPassword ? 'text' : 'password'"
+                name="password"
+                placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                autocomplete="current-password"
+                [(ngModel)]="password"
+                required
+              />
+              <button type="button" class="toggle-pass" (click)="toggleVerPassword()">
+                {{ verPassword ? 'Ocultar' : 'Ver' }}
+              </button>
+            </span>
+          </label>
 
-      <div class="login-divider"><span>o</span></div>
+          <button type="submit" class="btn btn-primary btn-lg" [disabled]="enviando()">
+            {{ enviando() ? 'Ingresando…' : 'Ingresar' }}
+          </button>
+        </form>
 
-      <div id="google-btn" class="google-btn-slot"></div>
+        <div class="login-divider"><span>o</span></div>
+
+        <div id="google-btn" class="google-btn-slot"></div>
+      </div>
+
+      @if (pideCodigo()) {
+        <form class="login-form" (ngSubmit)="verificarCodigo()">
+          <p class="login-hint">
+            Esta cuenta tiene verificaci&oacute;n en dos pasos. Abr&iacute; Google Authenticator e ingres&aacute;
+            el c&oacute;digo de 6 n&uacute;meros.
+          </p>
+
+          <label class="field">
+            <span class="field-label">C&oacute;digo de Google Authenticator</span>
+            <input
+              type="text"
+              name="codigo"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="7"
+              placeholder="123456"
+              class="codigo-input"
+              [(ngModel)]="codigo"
+              required
+            />
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-lg" [disabled]="enviando()">
+            {{ enviando() ? 'Verificando…' : 'Verificar' }}
+          </button>
+          <button type="button" class="btn-back" (click)="volverAlLogin()">&lsaquo; Volver</button>
+        </form>
+      }
     </section>
   </main>
 

@@ -252,6 +252,7 @@
                 <th>Nombre</th>
                 <th>Email</th>
                 <th>Alta</th>
+                <th>Dos pasos</th>
                 <th class="col-acciones">Acciones</th>
               </tr>
             </thead>
@@ -266,11 +267,27 @@
                   </td>
                   <td>{{ u.email }}</td>
                   <td>{{ u.created_at | date: 'dd/MM/yyyy' }}</td>
+                  <td>
+                    @if (u.dos_pasos) {
+                      <span class="dos-pasos-on">Google Authenticator</span>
+                    } @else {
+                      <span class="dos-pasos-off">Desactivada</span>
+                    }
+                  </td>
                   <td class="col-acciones">
                     <button type="button" class="btn-link" (click)="abrirEdicionUsuario(u)">Editar</button>
                     <button type="button" class="btn-link" (click)="abrirCambioPassword(u)">
                       Cambiar contraseña
                     </button>
+                    @if (u.dos_pasos) {
+                      <button type="button" class="btn-link" (click)="desactivarDosPasos(u)">
+                        Desactivar Google Authenticator
+                      </button>
+                    } @else {
+                      <button type="button" class="btn-link" (click)="abrirDosPasos(u)">
+                        Activar Google Authenticator
+                      </button>
+                    }
                   </td>
                 </tr>
               }
@@ -385,6 +402,54 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  }
+
+  @if (usuarioDosPasos(); as usuario) {
+    <div class="admin-modal-backdrop" (click)="cerrarDosPasos()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+        <h2>Activar Google Authenticator</h2>
+        <p class="admin-modal-sub">{{ usuario.name }} · {{ usuario.email }}</p>
+
+        @if (qrDosPasos(); as qr) {
+          <ol class="dos-pasos-pasos">
+            <li>Abrí Google Authenticator en el celular de {{ usuario.name }} y tocá <strong>+</strong>.</li>
+            <li>Escaneá este código QR (o cargá la clave a mano).</li>
+            <li>Escribí el código de 6 números que aparece en la app.</li>
+          </ol>
+
+          <img class="dos-pasos-qr" [src]="qr.qr" alt="Código QR para Google Authenticator" width="200" height="200" />
+          <p class="dos-pasos-clave">Clave: <code>{{ qr.secreto }}</code></p>
+
+          <form class="admin-form" (ngSubmit)="confirmarDosPasos()">
+            <label class="field">
+              <span class="field-label">Código de la app *</span>
+              <input
+                type="text"
+                name="codigo"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="7"
+                placeholder="123456"
+                [(ngModel)]="codigoDosPasos"
+                [class.field-invalid]="erroresUsuario()['codigo']"
+              />
+              @if (erroresUsuario()['codigo']) {
+                <span class="field-error">{{ erroresUsuario()['codigo'] }}</span>
+              }
+            </label>
+
+            <div class="admin-form-actions">
+              <button type="button" class="btn-back" (click)="cerrarDosPasos()">Cancelar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="guardandoUsuario()">
+                {{ guardandoUsuario() ? 'Verificando…' : 'Activar' }}
+              </button>
+            </div>
+          </form>
+        } @else {
+          <p class="admin-empty">Generando código QR…</p>
+        }
       </div>
     </div>
   }

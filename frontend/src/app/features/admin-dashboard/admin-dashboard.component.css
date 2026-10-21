@@ -405,3 +405,39 @@
 .butacas-label { width: 20px; color: var(--text-muted); font-size: 12px; }
 .butaca { min-width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-primary); cursor: pointer; font-size: 12px; }
 .butaca-bloqueada { background: #7a1f1f; border-color: #c0392b; color: #fff; text-decoration: line-through; }
+
+/* Verificacion en dos pasos (Configuracion > Usuarios) */
+.dos-pasos-on {
+  color: var(--accent, #ce3234);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.dos-pasos-off {
+  color: var(--text-muted, #8a6f52);
+  font-size: 13px;
+}
+
+.dos-pasos-pasos {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  color: var(--text-secondary, #cdb68f);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dos-pasos-qr {
+  display: block;
+  margin: 0 auto 12px;
+  background: #fff;
+  padding: 8px;
+  border-radius: var(--radius-md, 4px);
+}
+
+.dos-pasos-clave {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #cdb68f);
+  margin: 0 0 16px;
+  word-break: break-all;
+}

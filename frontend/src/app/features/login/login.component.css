@@ -189,6 +189,20 @@
   justify-content: center;
 }
 
+/* Segundo paso: codigo de Google Authenticator */
+.login-hint {
+  color: var(--text-secondary, #cdb68f);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.codigo-input {
+  font-size: 22px;
+  letter-spacing: 6px;
+  text-align: center;
+}
+
 /* Header y pie mas compactos para que el login entre en pantalla sin scroll. */
 .login-page .site-header {
   padding-top: 12px;
