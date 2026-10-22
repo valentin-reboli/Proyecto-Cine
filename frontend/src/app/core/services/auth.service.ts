@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from './api.config';
 
@@ -22,6 +23,7 @@ export interface LoginResponse {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
 
   readonly isLoggedIn = signal(this.hasToken());
 
@@ -64,9 +66,11 @@ export class AuthService {
     });
   }
 
+  // Ademas de borrar el token, saca al usuario del panel (si no, se quedaba en la misma pantalla).
   private clearSession(): void {
     localStorage.removeItem(TOKEN_KEY);
     this.isLoggedIn.set(false);
+    this.router.navigateByUrl('/login');
   }
 
   getToken(): string | null {
