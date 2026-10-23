@@ -1050,7 +1050,7 @@ button { font-family: var(--font-body); }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1058,41 +1058,42 @@ button { font-family: var(--font-body); }
 }
 .sidebar-movie {
   display: flex;
-  gap: 14px;
+  gap: 18px;
 }
 .sidebar-poster {
-  width: 56px;
-  height: 84px;
+  width: 84px;
+  height: 126px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   flex-shrink: 0;
 }
 .sidebar-title {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 20px;
   line-height: 1.2;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 .sidebar-sub {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 .sidebar-sub2 {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .sidebar-rows {
   border-top: 1px solid var(--border);
-  padding-top: 14px;
+  padding-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 .sidebar-row {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
 }
 .sidebar-row-right {
@@ -1105,25 +1106,25 @@ button { font-family: var(--font-body); }
 }
 .edit-link {
   color: var(--accent);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .sidebar-total {
   border-top: 1px solid var(--border);
-  padding-top: 14px;
+  padding-top: 18px;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
 }
 .sidebar-total span:first-child {
-  font-size: 14px;
+  font-size: 17px;
   color: var(--text-secondary);
 }
 .total-amount {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 34px;
   font-weight: 800;
   color: var(--accent);
 }

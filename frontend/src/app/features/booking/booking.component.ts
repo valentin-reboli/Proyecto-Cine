@@ -79,9 +79,9 @@ export class BookingComponent implements OnInit {
     this.catalog.movies().filter((m) => agruparPorDia(m.todayTimes).length > 0),
   );
 
-  readonly paymentMethods: { key: PaymentMethodKey; label: string }[] = [
-    { key: 'tarjeta', label: 'Tarjeta de crédito / débito' },
-    { key: 'mercadopago', label: 'Mercado Pago' },
+  readonly paymentMethods: { key: PaymentMethodKey; label: string; icon: string; detalle: string }[] = [
+    { key: 'tarjeta', label: 'Tarjeta de crédito / débito', icon: '💳', detalle: 'Visa, Mastercard, Amex' },
+    { key: 'mercadopago', label: 'Mercado Pago', icon: '📱', detalle: 'Dinero en cuenta o tarjetas guardadas' },
   ];
 
   readonly step = signal<Step>('pelicula');

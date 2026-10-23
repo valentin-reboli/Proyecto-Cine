@@ -181,7 +181,7 @@
             </div>
           }
           @case ('payment') {
-            <div class="booking-step">
+            <div class="booking-step paso-pago">
               <h2>Pago</h2>
               <p class="step-sub">Elegí cómo querés pagar.</p>
               <div class="payment-methods">
@@ -191,7 +191,11 @@
                     [class.active]="paymentMethod() === m.key"
                     (click)="setPaymentMethod(m.key)"
                   >
-                    <span>{{ m.label }}</span>
+                    <span class="payment-icon" aria-hidden="true">{{ m.icon }}</span>
+                    <span class="payment-text">
+                      <span class="payment-label">{{ m.label }}</span>
+                      <span class="payment-detalle">{{ m.detalle }}</span>
+                    </span>
                     @if (paymentMethod() === m.key) {
                       <span class="payment-check">✓</span>
                     }
@@ -222,7 +226,7 @@
                 }
               </div>
               <div class="secure-note">
-                <span class="checkbox-icon"></span>Tus butacas quedan reservadas 10 minutos · Recibís tus
+                <span aria-hidden="true">🔒</span>Tus butacas quedan reservadas 10 minutos · Recibís tus
                 entradas por email
               </div>
             </div>
@@ -263,7 +267,7 @@
         }
 
         @if (step() !== 'confirmation' && step() !== 'funcion' && step() !== 'pelicula') {
-          <div class="continue-wrap" [class.continue-centrado]="step() === 'seats' || step() === 'datos'">
+          <div class="continue-wrap" [class.continue-centrado]="step() === 'seats' || step() === 'datos' || step() === 'payment'">
             <button class="btn btn-primary btn-lg" [disabled]="continueDisabled()" (click)="handleContinue()">
               {{ continueLabel() }}
             </button>
@@ -284,7 +288,7 @@
               <div class="sidebar-title">{{ sel.movie.title }}</div>
               @if (sel.showtime; as f) {
                 <div class="sidebar-sub">{{ fechaLabel(f) }} · {{ f.time }} · {{ langLabel(f) }}</div>
-                <div class="sidebar-sub2">{{ f.sala }} · {{ f.format }}</div>
+                <div class="sidebar-sub2">{{ f.sala ? f.sala + ' · ' : '' }}{{ f.format }}</div>
               } @else {
                 <div class="sidebar-sub">Elegí una función</div>
               }

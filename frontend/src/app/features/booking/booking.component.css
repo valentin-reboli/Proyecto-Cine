@@ -56,3 +56,14 @@
 .continue-centrado { display: flex; justify-content: center; }
 .paso-datos > h2, .paso-datos > .step-sub { text-align: center; }
 .paso-datos .card-form { margin: 0 auto; padding: 24px; background: var(--surface-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
+.paso-pago > h2, .paso-pago > .step-sub { text-align: center; }
+.paso-pago .payment-methods { max-width: 640px; margin-left: auto; margin-right: auto; }
+.paso-pago .payment-method-btn { justify-content: flex-start; gap: 14px; }
+.payment-icon { font-size: 24px; line-height: 1; }
+.payment-text { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.payment-detalle { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+.paso-pago .codigo-descuento { margin: 0 auto; padding: 20px; background: var(--surface-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
+.paso-pago .codigo-row .btn { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.paso-pago .codigo-row .btn:disabled { opacity: .45; cursor: not-allowed; }
+.paso-pago .secure-note { justify-content: center; }
+@media (max-width: 600px) { .paso-pago .payment-methods { flex-direction: column; } }
