@@ -27,7 +27,7 @@
     <div class="booking-body">
       <div class="booking-main">
         @if (step() === 'pelicula') {
-          <div class="booking-step">
+          <div class="booking-step paso-pelicula">
             <h2>Elegí la película</h2>
             <p class="step-sub">Primero la película, después el día y el horario.</p>
             @if (cargandoCatalogo()) {
@@ -53,7 +53,7 @@
         @if (selection(); as sel) {
         @switch (step()) {
           @case ('funcion') {
-            <div class="booking-step">
+            <div class="booking-step paso-funcion">
               <h2>Elegí tu función</h2>
               <p class="step-sub">{{ sel.movie.title }} · {{ sel.movie.duration }} min · {{ sel.movie.rating }}</p>
               @if (dias().length === 0) {
@@ -71,7 +71,7 @@
                       <span class="funcion-dia">{{ dia.label }}</span>
                       <strong>{{ f.time }}</strong>
                       <span>{{ f.format }} · {{ langLabel(f) }}</span>
-                      <span>{{ f.sala }} · {{ formatPrice(f.price ?? 0) }}</span>
+                      <span>{{ f.sala ? f.sala + ' · ' : '' }}{{ formatPrice(f.price ?? 0) }}</span>
                     </button>
                   }
                 }
@@ -79,9 +79,9 @@
             </div>
           }
           @case ('seats') {
-            <div class="booking-step">
+            <div class="booking-step paso-butacas">
               <h2>Elegí tus butacas</h2>
-              <p class="step-sub">{{ sel.movie.title }} · {{ sel.showtime?.sala }}</p>
+              <p class="step-sub">{{ sel.movie.title }}{{ sel.showtime?.sala ? ' · ' + sel.showtime?.sala : '' }}</p>
               <div class="seat-legend">
                 <div><span class="swatch swatch-available"></span>Disponible</div>
                 <div><span class="swatch swatch-selected"></span>Seleccionada</div>
@@ -263,7 +263,7 @@
         }
 
         @if (step() !== 'confirmation' && step() !== 'funcion' && step() !== 'pelicula') {
-          <div class="continue-wrap">
+          <div class="continue-wrap" [class.continue-centrado]="step() === 'seats'">
             <button class="btn btn-primary btn-lg" [disabled]="continueDisabled()" (click)="handleContinue()">
               {{ continueLabel() }}
             </button>
