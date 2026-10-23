@@ -157,7 +157,7 @@
             </div>
           }
           @case ('datos') {
-            <div class="booking-step">
+            <div class="booking-step paso-datos">
               <h2>Tus datos</h2>
               <p class="step-sub">Te enviamos las entradas y el código QR a estos datos.</p>
               <div class="card-form" (input)="erroresDatos.set({})">
@@ -263,7 +263,7 @@
         }
 
         @if (step() !== 'confirmation' && step() !== 'funcion' && step() !== 'pelicula') {
-          <div class="continue-wrap" [class.continue-centrado]="step() === 'seats'">
+          <div class="continue-wrap" [class.continue-centrado]="step() === 'seats' || step() === 'datos'">
             <button class="btn btn-primary btn-lg" [disabled]="continueDisabled()" (click)="handleContinue()">
               {{ continueLabel() }}
             </button>

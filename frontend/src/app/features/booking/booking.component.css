@@ -54,3 +54,5 @@
 .paso-butacas .seat-legend { justify-content: center; }
 .paso-butacas .seat-summary { flex-direction: column; justify-content: center; gap: 6px; }
 .continue-centrado { display: flex; justify-content: center; }
+.paso-datos > h2, .paso-datos > .step-sub { text-align: center; }
+.paso-datos .card-form { margin: 0 auto; padding: 24px; background: var(--surface-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
