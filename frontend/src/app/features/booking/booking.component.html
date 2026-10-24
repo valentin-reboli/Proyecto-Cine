@@ -305,8 +305,8 @@
               <div class="sidebar-title">{{ sel.movie.title }}</div>
               @if (sel.showtime; as f) {
                 <div class="sidebar-chips">
-                  <span class="sidebar-chip">📅 {{ fechaLabel(f) }}</span>
-                  <span class="sidebar-chip">🕒 {{ f.time }}</span>
+                  <span class="sidebar-chip">{{ fechaLabel(f) }}</span>
+                  <span class="sidebar-chip">{{ f.time }}</span>
                   <span class="sidebar-chip">{{ f.format }}</span>
                   <span class="sidebar-chip">{{ langLabel(f) }}</span>
                   @if (f.sala) { <span class="sidebar-chip">{{ f.sala }}</span> }
