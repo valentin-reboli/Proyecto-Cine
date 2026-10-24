@@ -25,7 +25,7 @@ const FORM_VACIO: CampaniaForm = { nombre: '', canal: 'email', asunto: '', mensa
   imports: [DatePipe, FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-campanias.component.html',
   // Mismo estilo que el resto del panel.
-  styleUrl: '../admin-dashboard/admin-dashboard.component.css',
+  styleUrls: ['../admin-dashboard/admin-dashboard.component.css', '../admin-dashboard/admin-layout.css'],
 })
 export class AdminCampaniasComponent implements OnInit {
   private readonly service = inject(AdminCampaniaService);

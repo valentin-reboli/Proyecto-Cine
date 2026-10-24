@@ -37,7 +37,7 @@ type Vista = 'cartelera' | 'configuracion';
   selector: 'app-admin-dashboard',
   imports: [DatePipe, FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-dashboard.component.html',
-  styleUrl: './admin-dashboard.component.css',
+  styleUrls: ['./admin-dashboard.component.css', './admin-layout.css'],
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly peliculaService = inject(AdminPeliculaService);

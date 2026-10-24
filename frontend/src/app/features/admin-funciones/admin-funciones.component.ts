@@ -35,7 +35,7 @@ const FUNCION_VACIA: FuncionForm = {
   imports: [FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-funciones.component.html',
   // Mismo estilo que el resto del panel.
-  styleUrl: '../admin-dashboard/admin-dashboard.component.css',
+  styleUrls: ['../admin-dashboard/admin-dashboard.component.css', '../admin-dashboard/admin-layout.css'],
 })
 export class AdminFuncionesComponent implements OnInit {
   private readonly cine = inject(AdminCineService);

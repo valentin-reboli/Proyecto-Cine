@@ -1,0 +1,47 @@
+/* Estilos compartidos por todas las pantallas del admin (se suman a admin-dashboard.component.css). */
+/* Pestanas de secciones del admin */
+.admin-tabs { display: flex; gap: 4px; margin: 8px 0 28px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.admin-tab { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-secondary); font-family: var(--font-body); font-size: 15px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+.admin-tab:hover { color: var(--text-primary); }
+.admin-tab.activo { color: var(--text-primary); border-bottom-color: var(--accent); }
+.admin-tab-badge { min-width: 22px; padding: 2px 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
+.admin-ayuda { margin: -6px 0 18px; color: var(--text-secondary); font-size: 14px; }
+
+/* ===== Diseno limpio: encabezado centrado, filtros en barra y acciones compactas ===== */
+.admin-toolbar { text-align: center; margin-bottom: 28px; }
+.admin-toolbar h1 { font-size: 40px; margin: 6px 0 0; }
+.admin-tabs { justify-content: center; }
+
+.admin-filtros {
+  justify-content: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.admin-search { flex: 1; max-width: 420px; }
+
+.admin-section { padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.admin-section-head { margin-bottom: 20px; }
+.admin-section-head h2 { font-size: 24px; }
+.admin-section-head .btn-primary { padding: 10px 18px; font-size: 14px; box-shadow: none; }
+.admin-section .admin-table { background: transparent; }
+.admin-section .admin-filtros { padding: 0 0 18px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; justify-content: flex-start; margin-bottom: 20px; }
+
+.admin-table th, .admin-table td { padding-top: 14px; padding-bottom: 14px; }
+
+/* Acciones de cada fila como botones chicos alineados */
+.col-acciones { width: 1%; }
+.col-acciones button { margin-left: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.col-acciones .btn-link { border: 1px solid var(--border-strong); color: var(--text-primary); }
+.col-acciones .btn-link:hover { border-color: var(--accent); color: var(--accent); }
+.col-acciones .admin-btn-danger { border: 1px solid transparent; }
+.col-acciones .admin-btn-danger:hover { border-color: var(--accent); background: var(--accent-soft-12); }
+
+.admin-page .site-header .btn-back { white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 700px) {
+  .admin-toolbar h1 { font-size: 30px; }
+  .admin-section { padding: 16px; overflow-x: auto; }
+  .admin-search { max-width: none; min-width: 0; width: 100%; }
+}

@@ -21,7 +21,7 @@ const FORM_VACIO: ComboForm = { nombre: '', categoria: 'combo', descripcion: '',
   imports: [FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-combos.component.html',
   // Mismo estilo que el resto del panel.
-  styleUrl: '../admin-dashboard/admin-dashboard.component.css',
+  styleUrls: ['../admin-dashboard/admin-dashboard.component.css', '../admin-dashboard/admin-layout.css'],
 })
 export class AdminCombosComponent implements OnInit {
   private readonly service = inject(ComboService);
