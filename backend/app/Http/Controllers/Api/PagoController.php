@@ -53,7 +53,17 @@ class PagoController extends Controller
             'comprobante' => ['nullable', 'string', 'max:255'],
         ]);
 
-        abort_unless(strcasecmp($reserva->invitado_correo, $data['correo']) === 0, 403);
+        abort_unless($reserva->invitado_correo && strcasecmp($reserva->invitado_correo, $data['correo']) === 0, 403);
+
+        // Si se termino el tiempo pero el cron todavia no paso, se libera ahora.
+        ReservaAsiento::liberarVencidas($reserva->funcion_id);
+        $reserva->refresh();
+
+        if ($reserva->estado === 'expirada') {
+            return response()->json([
+                'message' => 'Se termino el tiempo para completar la compra y las butacas se liberaron. Hace una reserva nueva.',
+            ], 410);
+        }
 
         if ($reserva->estado !== 'pendiente') {
             return response()->json([
