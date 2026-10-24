@@ -1309,13 +1309,13 @@ button { font-family: var(--font-body); }
 .booking-step h2 { font-size: 26px; margin-bottom: 4px; }
 .step-sub { margin-bottom: 16px; }
 .continue-wrap { margin-top: 18px; }
-.seat-legend { margin-bottom: 10px; }
-.bloqueo-aviso { margin-bottom: 12px; font-size: 13px; }
+.butacas-layout { display: flex; align-items: center; justify-content: center; gap: 36px; flex-wrap: wrap; }
+.butacas-info { display: flex; flex-direction: column; gap: 16px; max-width: 220px; text-align: left; }
+.butacas-info .seat-legend { flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; }
+.bloqueo-aviso { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
 .screen-label { margin-bottom: 14px; }
 .seat-summary { margin-top: 14px; padding-top: 12px; }
 .seat-map-wrap { padding-bottom: 0; }
 
-/* Las butacas se achican segun el alto de la pantalla y la cantidad de filas (entre 18px y 30px). */
-.seat-rows { --seat: clamp(18px, calc((100vh - 470px) / var(--filas, 8) - 6px), 30px); gap: 6px; }
-.seat-row-seats { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: var(--seat); gap: 5px; }
-.seat-btn { width: var(--seat); height: var(--seat); font-size: calc(var(--seat) * 0.38); }
+/* La grilla toma la cantidad de butacas por fila de cada sala; las butacas mantienen su tamano de 28px. */
+.seat-row-seats { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 28px; }

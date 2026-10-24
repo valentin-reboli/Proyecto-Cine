@@ -133,22 +133,16 @@
             <div class="booking-step paso-butacas">
               <h2>Elegí tus butacas</h2>
               <p class="step-sub">{{ sel.movie.title }}{{ sel.showtime?.sala ? ' · ' + sel.showtime?.sala : '' }}</p>
-              <div class="seat-legend">
-                <div><span class="swatch swatch-available"></span>Disponible</div>
-                <div><span class="swatch swatch-selected"></span>Seleccionada</div>
-                <div><span class="swatch swatch-occupied"></span>Ocupada</div>
-              </div>
-              <p class="step-sub bloqueo-aviso">
-                Al continuar, tus butacas quedan reservadas por {{ minutosBloqueo }} minutos para que completes la compra.
-              </p>
               @if (cargandoAsientos()) {
                 <p class="step-sub">Cargando butacas…</p>
               }
+              <!-- Mapa a la izquierda y leyenda + aviso a la derecha, para que el paso entre en la pantalla. -->
+              <div class="butacas-layout">
               <div class="seat-map-wrap">
                 <div class="seat-map-inner">
                   <div class="screen-curve"></div>
                   <div class="screen-label">PANTALLA</div>
-                  <div class="seat-rows" [style.--filas]="seatRows().length">
+                  <div class="seat-rows">
                     @for (row of seatRows(); track row.row) {
                       <div class="seat-row">
                         <span class="seat-row-label">{{ row.row }}</span>
@@ -169,6 +163,17 @@
                     }
                   </div>
                 </div>
+              </div>
+              <div class="butacas-info">
+                <div class="seat-legend">
+                  <div><span class="swatch swatch-available"></span>Disponible</div>
+                  <div><span class="swatch swatch-selected"></span>Seleccionada</div>
+                  <div><span class="swatch swatch-occupied"></span>Ocupada</div>
+                </div>
+                <p class="bloqueo-aviso">
+                  Al continuar, tus butacas quedan reservadas por {{ minutosBloqueo }} minutos para que completes la compra.
+                </p>
+              </div>
               </div>
               <div class="seat-summary">
                 <span>{{ selectedSeats().length }} butaca(s) seleccionada(s) (máx. 8)</span>
