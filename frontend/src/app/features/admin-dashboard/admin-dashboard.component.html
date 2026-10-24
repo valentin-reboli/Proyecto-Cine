@@ -7,7 +7,7 @@
       <a routerLink="/admin/combos" routerLinkActive="activo">Combos</a>
       <a routerLink="/admin/campanias" routerLinkActive="activo">Campañas</a>
       <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
-      <a routerLink="/">Ver sitio</a>
+      <a href="/" target="_blank" rel="noopener">Ver sitio ↗</a>
     </nav>
     <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
   </header>
@@ -69,11 +69,11 @@
             }
           </p>
         } @else {
-          <table class="admin-table">
+          <table class="admin-table admin-table-menu tabla-centrada">
             <thead>
               <tr>
                 <th class="col-poster"></th>
-                <th>Título</th>
+                <th class="col-pelicula">Título</th>
                 <th>Género</th>
                 <th>Duración</th>
                 <th>Clasif.</th>
@@ -88,27 +88,32 @@
                       @if (!p.poster_url) { <span>—</span> }
                     </div>
                   </td>
-                  <td>
+                  <td class="col-pelicula">
                     <span class="admin-titulo">{{ p.titulo }}</span>
                     @if (p.trailer_url) {
                       <a [href]="p.trailer_url" target="_blank" rel="noopener" class="admin-trailer-link">▶ Trailer</a>
                     }
                   </td>
                   <td>{{ p.genero?.nombre ?? '—' }}</td>
-                  <td>{{ p.duracion_min }} min</td>
+                  <td class="col-corta">{{ p.duracion_min }} min</td>
                   <td>{{ p.clasificacion || '—' }}</td>
                   <td class="col-acciones">
-                    <button type="button" class="btn-link" (click)="abrirEdicion(p)" [disabled]="filaProcesando() === p.id">
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      class="admin-btn-danger"
-                      (click)="eliminar(p)"
-                      [disabled]="filaProcesando() === p.id"
-                    >
-                      {{ filaProcesando() === p.id ? '…' : 'Dar de baja' }}
-                    </button>
+                    <div class="acciones-menu">
+                      <button
+                        type="button"
+                        class="acciones-toggle"
+                        [disabled]="filaProcesando() === p.id"
+                        [attr.aria-expanded]="menuAbierto() === 'pelicula-' + p.id"
+                        [attr.aria-label]="'Acciones de ' + p.titulo"
+                        (click)="toggleMenu('pelicula-' + p.id, $event)"
+                      >{{ filaProcesando() === p.id ? '…' : '⋯' }}</button>
+                      @if (menuAbierto() === 'pelicula-' + p.id) {
+                        <div class="acciones-lista" role="menu">
+                          <button type="button" role="menuitem" (click)="abrirEdicion(p)">Editar</button>
+                          <button type="button" role="menuitem" class="peligro" (click)="eliminar(p)">Dar de baja</button>
+                        </div>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -135,13 +140,13 @@
             }
           </p>
         } @else {
-          <table class="admin-table">
+          <table class="admin-table admin-table-menu tabla-centrada">
             <thead>
               <tr>
                 <th class="col-poster"></th>
-                <th>Título</th>
+                <th class="col-pelicula">Título</th>
                 <th>Género</th>
-                <th>Fecha de estreno</th>
+                <th class="col-corta">Estreno</th>
                 <th class="col-acciones">Acciones</th>
               </tr>
             </thead>
@@ -153,34 +158,32 @@
                       @if (!p.poster_url) { <span>—</span> }
                     </div>
                   </td>
-                  <td>
+                  <td class="col-pelicula">
                     <span class="admin-titulo">{{ p.titulo }}</span>
                     @if (p.trailer_url) {
                       <a [href]="p.trailer_url" target="_blank" rel="noopener" class="admin-trailer-link">▶ Trailer</a>
                     }
                   </td>
                   <td>{{ p.genero?.nombre ?? '—' }}</td>
-                  <td>{{ p.fecha_estreno || 'Sin fecha' }}</td>
+                  <td class="col-corta">{{ p.fecha_estreno ? (p.fecha_estreno | date: 'dd/MM/yyyy') : 'Sin fecha' }}</td>
                   <td class="col-acciones">
-                    <button
-                      type="button"
-                      class="btn-link"
-                      (click)="publicarAhora(p)"
-                      [disabled]="filaProcesando() === p.id"
-                    >
-                      {{ filaProcesando() === p.id ? '…' : 'Publicar ahora' }}
-                    </button>
-                    <button type="button" class="btn-link" (click)="abrirEdicion(p)" [disabled]="filaProcesando() === p.id">
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      class="admin-btn-danger"
-                      (click)="eliminar(p)"
-                      [disabled]="filaProcesando() === p.id"
-                    >
-                      {{ filaProcesando() === p.id ? '…' : 'Dar de baja' }}
-                    </button>
+                    <div class="acciones-menu">
+                      <button
+                        type="button"
+                        class="acciones-toggle"
+                        [disabled]="filaProcesando() === p.id"
+                        [attr.aria-expanded]="menuAbierto() === 'pelicula-' + p.id"
+                        [attr.aria-label]="'Acciones de ' + p.titulo"
+                        (click)="toggleMenu('pelicula-' + p.id, $event)"
+                      >{{ filaProcesando() === p.id ? '…' : '⋯' }}</button>
+                      @if (menuAbierto() === 'pelicula-' + p.id) {
+                        <div class="acciones-lista" role="menu">
+                          <button type="button" role="menuitem" (click)="publicarAhora(p)">Publicar ahora</button>
+                          <button type="button" role="menuitem" (click)="abrirEdicion(p)">Editar</button>
+                          <button type="button" role="menuitem" class="peligro" (click)="eliminar(p)">Dar de baja</button>
+                        </div>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -279,11 +282,11 @@
                       <button
                         type="button"
                         class="acciones-toggle"
-                        [attr.aria-expanded]="menuAbierto() === u.id"
+                        [attr.aria-expanded]="menuAbierto() === 'usuario-' + u.id"
                         [attr.aria-label]="'Acciones de ' + u.name"
-                        (click)="toggleMenu(u.id, $event)"
+                        (click)="toggleMenu('usuario-' + u.id, $event)"
                       >⋯</button>
-                      @if (menuAbierto() === u.id) {
+                      @if (menuAbierto() === 'usuario-' + u.id) {
                         <div class="acciones-lista" role="menu">
                           <button type="button" role="menuitem" (click)="abrirEdicionUsuario(u)">Editar</button>
                           <button type="button" role="menuitem" (click)="abrirCambioPassword(u)">Cambiar contraseña</button>

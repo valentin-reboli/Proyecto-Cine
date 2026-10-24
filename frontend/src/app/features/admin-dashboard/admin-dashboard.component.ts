@@ -60,10 +60,10 @@ export class AdminDashboardComponent implements OnInit {
   readonly error = signal('');
   readonly aviso = signal('');
   readonly filaProcesando = signal<number | null>(null);
-  // Usuario con el menu de acciones (⋯) abierto en Configuracion.
-  readonly menuAbierto = signal<number | null>(null);
+  // Fila con el menu de acciones (⋯) abierto: 'pelicula-3' o 'usuario-1'.
+  readonly menuAbierto = signal<string | null>(null);
 
-  toggleMenu(id: number, event: Event): void {
+  toggleMenu(id: string, event: Event): void {
     event.stopPropagation();
     this.menuAbierto.update((actual) => (actual === id ? null : id));
   }

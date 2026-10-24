@@ -71,3 +71,4 @@
 .admin-alta { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
 .admin-alta .field { flex: 1; min-width: 140px; }
 .admin-alta-btn { flex: 0 0 auto; padding: 13px 22px; box-shadow: none; }
+.col-corta { white-space: nowrap; }
