@@ -23,10 +23,14 @@
     @if (aviso()) { <p class="admin-aviso">{{ aviso() }}</p> }
     @if (error()) { <p class="admin-error">{{ error() }}</p> }
 
-    <div class="admin-filtros">
-      <button type="button" class="btn" [class.btn-primary]="tab() === 'funciones'" (click)="tab.set('funciones')">Funciones</button>
-      <button type="button" class="btn" [class.btn-primary]="tab() === 'salas'" (click)="tab.set('salas')">Salas y butacas</button>
-      <button type="button" class="btn" [class.btn-primary]="tab() === 'formatos'" (click)="tab.set('formatos')">Formatos</button>
+    <div class="admin-tabs" role="tablist">
+      <button type="button" role="tab" class="admin-tab" [class.activo]="tab() === 'funciones'" (click)="tab.set('funciones')">Funciones</button>
+      <button type="button" role="tab" class="admin-tab" [class.activo]="tab() === 'expiradas'" (click)="tab.set('expiradas')">
+        Películas expiradas
+        @if (peliculasExpiradas().length) { <span class="admin-tab-badge">{{ peliculasExpiradas().length }}</span> }
+      </button>
+      <button type="button" role="tab" class="admin-tab" [class.activo]="tab() === 'salas'" (click)="tab.set('salas')">Salas y butacas</button>
+      <button type="button" role="tab" class="admin-tab" [class.activo]="tab() === 'formatos'" (click)="tab.set('formatos')">Formatos</button>
     </div>
 
     @if (cargando()) {
@@ -35,7 +39,7 @@
       @if (tab() === 'funciones') {
         <section class="admin-section">
           <div class="admin-section-head">
-            <h2>Funciones <span class="admin-count">({{ funcionesVisibles().length }})</span></h2>
+            <h2>Próximas funciones <span class="admin-count">({{ funcionesVisibles().length }})</span></h2>
             <button type="button" class="btn btn-primary" (click)="abrirNuevaFuncion()">+ Nueva función</button>
           </div>
 
@@ -53,7 +57,7 @@
           </div>
 
           @if (funcionesVisibles().length === 0) {
-            <p class="admin-empty">No hay funciones cargadas.</p>
+            <p class="admin-empty">No hay funciones próximas.</p>
           } @else {
             <table class="admin-table">
               <thead>
@@ -83,6 +87,42 @@
                         <button type="button" class="btn-link" (click)="abrirEdicionFuncion(f)">Editar</button>
                         <button type="button" class="admin-btn-danger" (click)="cancelarFuncion(f)">Cancelar</button>
                       }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+      }
+
+      @if (tab() === 'expiradas') {
+        <section class="admin-section">
+          <div class="admin-section-head">
+            <h2>Películas expiradas <span class="admin-count">({{ peliculasExpiradas().length }})</span></h2>
+          </div>
+          <p class="admin-ayuda">Películas a las que ya no les queda ninguna función próxima. Reprogramalas para que vuelvan a aparecer en la compra.</p>
+
+          @if (peliculasExpiradas().length === 0) {
+            <p class="admin-empty">Todas las películas tienen funciones próximas.</p>
+          } @else {
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Película</th>
+                  <th>Última función</th>
+                  <th>Funciones dadas</th>
+                  <th class="col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of peliculasExpiradas(); track e.peliculaId) {
+                  <tr>
+                    <td><span class="admin-titulo">{{ e.pelicula?.titulo }}</span></td>
+                    <td>{{ fecha(e.ultima) }} · {{ hora(e.ultima) }}</td>
+                    <td>{{ e.cantidad }}</td>
+                    <td class="col-acciones">
+                      <button type="button" class="btn-link" (click)="reprogramar(e.peliculaId)">Reprogramar</button>
                     </td>
                   </tr>
                 }

@@ -8,7 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { AdminPelicula } from '../../core/models/admin-pelicula.model';
 import { AdminFuncion, Butaca, Formato, FuncionPayload, Idioma, Sala } from '../../core/models/admin-cine.model';
 
-type Tab = 'funciones' | 'salas' | 'formatos';
+type Tab = 'funciones' | 'expiradas' | 'salas' | 'formatos';
 
 interface FuncionForm {
   pelicula_id: number;
@@ -59,13 +59,31 @@ export class AdminFuncionesComponent implements OnInit {
   // Funciones
   readonly filtroPelicula = signal(0);
   readonly mostrarCanceladas = signal(false);
+  // La pestana Funciones muestra solo las proximas; las que ya pasaron quedan en Expiradas.
   readonly funcionesVisibles = computed(() =>
     this.funciones().filter(
       (f) =>
+        !this.yaPaso(f) &&
         (this.mostrarCanceladas() || !f.cancelada) &&
         (!this.filtroPelicula() || f.pelicula_id === this.filtroPelicula()),
     ),
   );
+
+  // Peliculas que tuvieron funciones pero no les queda ninguna proxima (sin contar canceladas).
+  readonly peliculasExpiradas = computed(() => {
+    const porPelicula = new Map<number, AdminFuncion[]>();
+    for (const f of this.funciones()) {
+      if (f.cancelada) continue;
+      porPelicula.set(f.pelicula_id, [...(porPelicula.get(f.pelicula_id) ?? []), f]);
+    }
+    return [...porPelicula.values()]
+      .filter((fs) => fs.every((f) => this.yaPaso(f)))
+      .map((fs) => {
+        const ultima = fs.reduce((a, b) => (a.fecha_hora > b.fecha_hora ? a : b));
+        return { pelicula: ultima.pelicula, peliculaId: ultima.pelicula_id, ultima, cantidad: fs.length };
+      })
+      .sort((a, b) => b.ultima.fecha_hora.localeCompare(a.ultima.fecha_hora));
+  });
   readonly mostrarFormFuncion = signal(false);
   readonly funcionEditandoId = signal<number | null>(null);
   readonly guardando = signal(false);
@@ -146,10 +164,20 @@ export class AdminFuncionesComponent implements OnInit {
 
   // --- Funciones ---
 
-  abrirNuevaFuncion(): void {
+  // fecha_hora viene como "YYYY-MM-DD HH:mm:ss"; se compara en hora local, igual que se muestra.
+  private yaPaso(f: AdminFuncion): boolean {
+    return new Date(`${f.fecha_hora.slice(0, 10)}T${f.fecha_hora.slice(11, 16)}`).getTime() < Date.now();
+  }
+
+  reprogramar(peliculaId: number): void {
+    this.tab.set('funciones');
+    this.abrirNuevaFuncion(peliculaId);
+  }
+
+  abrirNuevaFuncion(peliculaId?: number): void {
     this.form = {
       ...FUNCION_VACIA,
-      pelicula_id: this.peliculas()[0]?.id ?? 0,
+      pelicula_id: peliculaId ?? this.peliculas()[0]?.id ?? 0,
       sala_id: this.salas()[0]?.id ?? 0,
       formato_id: this.formatos()[0]?.id ?? 0,
     };
