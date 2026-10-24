@@ -307,4 +307,176 @@ class ReservaFlowTest extends TestCase
         $this->deleteJson("/api/combos/{$combo['id']}")->assertUnprocessable();
         $this->deleteJson("/api/combos/{$inactivo->id}")->assertNoContent();
     }
+
+    private function estadoDe(Funcion $funcion, Asiento $asiento): string
+    {
+        return collect($this->getJson("/api/funciones/{$funcion->id}/asientos")->json())
+            ->firstWhere('id', $asiento->id)['estado'];
+    }
+
+    public function test_bloquear_butacas_las_reserva_8_minutos_y_nadie_mas_las_puede_tomar(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+
+        $bloqueo = $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id,
+            'asientos' => [$asiento->id],
+        ])->assertCreated()->json();
+
+        $this->assertNotEmpty($bloqueo['token']);
+        $this->assertSame([$asiento->id], $bloqueo['asientos']);
+        $this->assertEqualsWithDelta(8 * 60, $bloqueo['segundos_restantes'], 2);
+        $this->assertSame('temporal', $this->estadoDe($funcion, $asiento));
+
+        // Otro cliente no la puede bloquear ni comprar
+        $this->postJson('/api/reservas/bloquear', ['funcion_id' => $funcion->id, 'asientos' => [$asiento->id]])
+            ->assertStatus(409);
+        $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Beto', 'invitado_correo' => 'beto@test.com',
+        ])->assertStatus(409);
+
+        // El token no se expone en otros listados
+        $this->assertArrayNotHasKey('token_bloqueo', $this->getJson("/api/reservas?correo=ana@test.com")->json()[0] ?? []);
+
+        // Quien la bloqueo completa sus datos y paga: queda ocupada
+        $reserva = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
+        ])->assertCreated();
+        $this->assertSame($bloqueo['id'], $reserva->json('id'));
+        $this->assertArrayNotHasKey('token_bloqueo', $reserva->json());
+
+        $this->postJson("/api/reservas/{$bloqueo['id']}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])
+            ->assertCreated();
+
+        // Comprada: sigue ocupada aunque pasen los 8 minutos
+        $this->travel(30)->minutes();
+        $this->artisan('reservas:liberar-vencidas')->assertSuccessful();
+        $this->assertSame('ocupado', $this->estadoDe($funcion, $asiento));
+    }
+
+    public function test_si_pasan_los_8_minutos_sin_comprar_las_butacas_vuelven_a_estar_disponibles(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+
+        $bloqueo = $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+        ])->assertCreated()->json();
+
+        $this->travel(7)->minutes();
+        $this->assertSame('temporal', $this->estadoDe($funcion, $asiento));
+
+        $this->travel(2)->minutes();
+        $this->assertSame('disponible', $this->estadoDe($funcion, $asiento));
+
+        // Aunque el cron todavia no haya pasado, otro cliente ya la puede tomar
+        $this->postJson('/api/reservas/bloquear', ['funcion_id' => $funcion->id, 'asientos' => [$asiento->id]])
+            ->assertCreated();
+
+        // Y el primero ya no puede completar la compra
+        $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
+        ])->assertStatus(410);
+    }
+
+    public function test_pagar_una_reserva_vencida_devuelve_410_aunque_no_haya_pasado_el_cron(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+
+        $reservaId = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+        ])->assertCreated()->json('id');
+
+        $this->travel(9)->minutes();
+
+        $this->postJson("/api/reservas/{$reservaId}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])
+            ->assertStatus(410);
+        $this->assertSame('disponible', $this->estadoDe($funcion, $asiento));
+    }
+
+    public function test_cambiar_las_butacas_bloqueadas_mantiene_el_tiempo_que_quedaba(): void
+    {
+        $funcion = $this->crearFuncion();
+        [$a1, $a2] = Asiento::where('sala_id', $funcion->sala_id)->get();
+
+        $bloqueo = $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$a1->id],
+        ])->assertCreated()->json();
+
+        $this->travel(3)->minutes();
+
+        $cambio = $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$a1->id, $a2->id],
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
+        ])->assertCreated()->json();
+
+        $this->assertSame($bloqueo['id'], $cambio['id']);
+        $this->assertEqualsWithDelta(5 * 60, $cambio['segundos_restantes'], 2);
+
+        // Se saca la A1 y se vuelve a poner: la misma reserva la puede retomar
+        $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$a2->id],
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
+        ])->assertCreated();
+        $this->assertSame('disponible', $this->estadoDe($funcion, $a1));
+
+        $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$a1->id, $a2->id],
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
+        ])->assertCreated();
+
+        // Con un token equivocado no se puede tocar el bloqueo
+        $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$a1->id],
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => 'otro',
+        ])->assertForbidden();
+        $this->postJson("/api/reservas/{$bloqueo['id']}/liberar", ['token' => 'otro'])->assertForbidden();
+    }
+
+    public function test_liberar_un_bloqueo_deja_las_butacas_disponibles_al_instante(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+
+        $bloqueo = $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+        ])->json();
+
+        $this->postJson("/api/reservas/{$bloqueo['id']}/liberar", ['token' => $bloqueo['token']])->assertNoContent();
+        $this->assertSame('disponible', $this->estadoDe($funcion, $asiento));
+
+        // Liberarlo de nuevo no falla
+        $this->postJson("/api/reservas/{$bloqueo['id']}/liberar", ['token' => $bloqueo['token']])->assertNoContent();
+    }
+
+    public function test_una_butaca_comprada_esta_libre_en_la_proxima_funcion(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+        $proxima = $funcion->replicate();
+        $proxima->fecha_hora = now()->addDays(2);
+        $proxima->save();
+
+        $bloqueo = $this->postJson('/api/reservas/bloquear', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+        ])->json();
+        $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+            'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
+        ])->assertCreated();
+        $this->postJson("/api/reservas/{$bloqueo['id']}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])
+            ->assertCreated();
+
+        $this->assertSame('ocupado', $this->estadoDe($funcion, $asiento));
+        $this->assertSame('disponible', $this->estadoDe($proxima, $asiento));
+    }
 }
