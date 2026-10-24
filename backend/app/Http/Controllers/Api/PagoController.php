@@ -71,19 +71,32 @@ class PagoController extends Controller
             ], 422);
         }
 
-        $butacasVigentes = ReservaAsiento::where('reserva_id', $reserva->id)
-            ->where('estado_bloqueo', 'temporal')
-            ->count();
+        // Dentro de la transaccion y con la fila de la reserva bloqueada: dos pagos
+        // simultaneos, o un pago que se cruza con la liberacion del bloqueo, se
+        // resuelven de a uno.
+        $pago = DB::transaction(function () use ($reserva, $data) {
+            $reserva = Reserva::whereKey($reserva->id)->lockForUpdate()->first();
 
-        $totalButacas = ReservaAsiento::where('reserva_id', $reserva->id)->count();
+            if ($reserva->estado !== 'pendiente') {
+                throw new HttpResponseException(response()->json([
+                    'message' => 'La reserva no esta pendiente de pago (estado actual: '.$reserva->estado.').',
+                ], 422));
+            }
 
-        if ($butacasVigentes !== $totalButacas) {
-            return response()->json([
-                'message' => 'La reserva vencio y sus butacas fueron liberadas. Hace una reserva nueva.',
-            ], 410);
-        }
+            // Solo se ocupan butacas cuyo bloqueo sigue vigente; si alguna vencio se cancela todo.
+            $totalButacas = ReservaAsiento::where('reserva_id', $reserva->id)->count();
 
-        $pago = DB::transaction(function () use ($request, $reserva, $data) {
+            $ocupadas = ReservaAsiento::where('reserva_id', $reserva->id)
+                ->where('estado_bloqueo', 'temporal')
+                ->where('expira_en', '>', now())
+                ->update(['estado_bloqueo' => 'ocupado']);
+
+            if ($ocupadas !== $totalButacas) {
+                throw new HttpResponseException(response()->json([
+                    'message' => 'La reserva vencio y sus butacas fueron liberadas. Hace una reserva nueva.',
+                ], 410));
+            }
+
             // El codigo de descuento se consume recien al pagar (y una sola vez).
             if ($reserva->descuento_id) {
                 $consumido = Descuento::where('id', $reserva->descuento_id)
@@ -102,10 +115,6 @@ class PagoController extends Controller
                 'codigo_qr' => (string) Str::uuid(),
             ]);
 
-            ReservaAsiento::where('reserva_id', $reserva->id)
-                ->where('estado_bloqueo', 'temporal')
-                ->update(['estado_bloqueo' => 'ocupado']);
-
             return Pago::create([
                 'reserva_id' => $reserva->id,
                 'metodo' => $data['metodo'],
@@ -114,7 +123,9 @@ class PagoController extends Controller
                 'monto' => $reserva->total,
                 'pagado_en' => now(),
             ]);
-        });
+        }, 3);
+
+        $reserva->refresh();
 
         // Descuento de regalo para la proxima compra + comprobante y QR por mensaje (n8n).
         $descuentos->generarPara($reserva);

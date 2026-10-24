@@ -489,7 +489,15 @@ class ReservaController extends Controller
 
     private function liberarButacas(Reserva $reserva): void
     {
+        // Con la fila bloqueada y volviendo a mirar el estado: si un pago entro
+        // justo antes, la reserva ya esta pagada y no se toca.
         DB::transaction(function () use ($reserva) {
+            $reserva = Reserva::whereKey($reserva->id)->lockForUpdate()->first();
+
+            if ($reserva->estado !== 'pendiente') {
+                return;
+            }
+
             ReservaAsiento::where('reserva_id', $reserva->id)
                 ->where('estado_bloqueo', 'temporal')
                 ->update(['estado_bloqueo' => 'liberado']);

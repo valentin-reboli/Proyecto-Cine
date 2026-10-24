@@ -402,6 +402,24 @@ class ReservaFlowTest extends TestCase
         $this->assertSame('disponible', $this->estadoDe($funcion, $asiento));
     }
 
+    public function test_pagar_dos_veces_la_misma_reserva_cobra_una_sola_vez(): void
+    {
+        $funcion = $this->crearFuncion();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
+
+        $reservaId = $this->postJson('/api/reservas', [
+            'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
+            'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
+        ])->assertCreated()->json('id');
+
+        $pago = ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'];
+        $this->postJson("/api/reservas/{$reservaId}/pago", $pago)->assertCreated();
+        $this->postJson("/api/reservas/{$reservaId}/pago", $pago)->assertUnprocessable();
+
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertSame('ocupado', $this->estadoDe($funcion, $asiento));
+    }
+
     public function test_cambiar_las_butacas_bloqueadas_mantiene_el_tiempo_que_quedaba(): void
     {
         $funcion = $this->crearFuncion();
