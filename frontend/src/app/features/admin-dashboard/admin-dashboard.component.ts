@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
@@ -60,6 +60,19 @@ export class AdminDashboardComponent implements OnInit {
   readonly error = signal('');
   readonly aviso = signal('');
   readonly filaProcesando = signal<number | null>(null);
+  // Usuario con el menu de acciones (⋯) abierto en Configuracion.
+  readonly menuAbierto = signal<number | null>(null);
+
+  toggleMenu(id: number, event: Event): void {
+    event.stopPropagation();
+    this.menuAbierto.update((actual) => (actual === id ? null : id));
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  cerrarMenu(): void {
+    this.menuAbierto.set(null);
+  }
 
   // Búsqueda y filtro (aplican a ambas listas)
   busqueda = '';

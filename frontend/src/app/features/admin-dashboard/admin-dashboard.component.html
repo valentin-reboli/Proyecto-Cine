@@ -246,7 +246,7 @@
         @if (usuarios().length === 0) {
           <p class="admin-empty">No hay usuarios cargados.</p>
         } @else {
-          <table class="admin-table">
+          <table class="admin-table admin-table-menu">
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -275,19 +275,26 @@
                     }
                   </td>
                   <td class="col-acciones">
-                    <button type="button" class="btn-link" (click)="abrirEdicionUsuario(u)">Editar</button>
-                    <button type="button" class="btn-link" (click)="abrirCambioPassword(u)">
-                      Cambiar contraseña
-                    </button>
-                    @if (u.dos_pasos) {
-                      <button type="button" class="btn-link" (click)="desactivarDosPasos(u)">
-                        Desactivar Google Authenticator
-                      </button>
-                    } @else {
-                      <button type="button" class="btn-link" (click)="abrirDosPasos(u)">
-                        Activar Google Authenticator
-                      </button>
-                    }
+                    <div class="acciones-menu">
+                      <button
+                        type="button"
+                        class="acciones-toggle"
+                        [attr.aria-expanded]="menuAbierto() === u.id"
+                        [attr.aria-label]="'Acciones de ' + u.name"
+                        (click)="toggleMenu(u.id, $event)"
+                      >⋯</button>
+                      @if (menuAbierto() === u.id) {
+                        <div class="acciones-lista" role="menu">
+                          <button type="button" role="menuitem" (click)="abrirEdicionUsuario(u)">Editar</button>
+                          <button type="button" role="menuitem" (click)="abrirCambioPassword(u)">Cambiar contraseña</button>
+                          @if (u.dos_pasos) {
+                            <button type="button" role="menuitem" class="peligro" (click)="desactivarDosPasos(u)">Desactivar Google Authenticator</button>
+                          } @else {
+                            <button type="button" role="menuitem" (click)="abrirDosPasos(u)">Activar Google Authenticator</button>
+                          }
+                        </div>
+                      }
+                    </div>
                   </td>
                 </tr>
               }

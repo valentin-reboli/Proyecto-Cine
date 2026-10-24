@@ -45,3 +45,13 @@
   .admin-section { padding: 16px; overflow-x: auto; }
   .admin-search { max-width: none; min-width: 0; width: 100%; }
 }
+
+/* Menu de acciones (⋯) por fila */
+.admin-table-menu { overflow: visible; }
+.acciones-menu { position: relative; display: inline-block; }
+.col-acciones .acciones-toggle { width: 36px; height: 36px; margin: 0; padding: 0; border-radius: 50%; border: 1px solid var(--border-strong); background: transparent; color: var(--text-primary); font-size: 20px; line-height: 1; cursor: pointer; }
+.col-acciones .acciones-toggle:hover, .acciones-toggle[aria-expanded='true'] { border-color: var(--accent); color: var(--accent); }
+.acciones-lista { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 250px; display: flex; flex-direction: column; padding: 6px; background: var(--surface-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45); animation: ccFadeUp 0.15s ease-out; }
+.col-acciones .acciones-lista button { margin: 0; padding: 10px 12px; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--text-primary); text-align: left; font-size: 14px; font-weight: 500; cursor: pointer; }
+.col-acciones .acciones-lista button:hover { background: var(--accent-soft-12); }
+.col-acciones .acciones-lista .peligro { color: var(--accent-light); }
