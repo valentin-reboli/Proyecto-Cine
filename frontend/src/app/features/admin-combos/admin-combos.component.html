@@ -35,11 +35,12 @@
         @if (combos().length === 0) {
           <p class="admin-empty">Todavía no cargaste ningún combo. Los que estén activos se ofrecen al comprar entradas.</p>
         } @else {
-          <table class="admin-table">
+          <table class="admin-table admin-table-menu">
             <thead>
               <tr>
                 <th class="col-poster"></th>
                 <th>Nombre</th>
+                <th>Detalles</th>
                 <th>Tipo</th>
                 <th>Precio</th>
                 <th>Estado</th>
@@ -54,17 +55,28 @@
                       @if (!c.imagen_url) { <span>—</span> }
                     </div>
                   </td>
-                  <td>
-                    <span class="admin-titulo">{{ c.nombre }}</span>
-                    @if (c.descripcion) { <span class="admin-preview-label">{{ c.descripcion }}</span> }
-                  </td>
+                  <td><span class="admin-titulo">{{ c.nombre }}</span></td>
+                  <td class="col-detalles">{{ c.descripcion || '—' }}</td>
                   <td>{{ categoriaLabel(c.categoria) }}</td>
                   <td>${{ c.precio }}</td>
                   <td>{{ c.activo ? 'Activo' : 'Oculto' }}</td>
                   <td class="col-acciones">
-                    <button type="button" class="btn-link" (click)="abrirEdicion(c)">Editar</button>
-                    <button type="button" class="btn-link" (click)="toggleActivo(c)">{{ c.activo ? 'Ocultar' : 'Activar' }}</button>
-                    <button type="button" class="admin-btn-danger" (click)="eliminar(c)">Borrar</button>
+                    <div class="acciones-menu">
+                      <button
+                        type="button"
+                        class="acciones-toggle"
+                        [attr.aria-expanded]="menuAbierto() === c.id"
+                        [attr.aria-label]="'Acciones de ' + c.nombre"
+                        (click)="toggleMenu(c.id, $event)"
+                      >⋯</button>
+                      @if (menuAbierto() === c.id) {
+                        <div class="acciones-lista" role="menu">
+                          <button type="button" role="menuitem" (click)="abrirEdicion(c)">Editar</button>
+                          <button type="button" role="menuitem" (click)="toggleActivo(c)">{{ c.activo ? 'Ocultar' : 'Activar' }}</button>
+                          <button type="button" role="menuitem" class="peligro" (click)="eliminar(c)">Borrar</button>
+                        </div>
+                      }
+                    </div>
                   </td>
                 </tr>
               }

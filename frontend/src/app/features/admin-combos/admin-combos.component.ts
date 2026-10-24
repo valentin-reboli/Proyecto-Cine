@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ComboService } from '../../core/services/combo.service';
@@ -29,6 +29,19 @@ export class AdminCombosComponent implements OnInit {
 
   readonly categorias = CATEGORIAS_COMBO;
   readonly combos = signal<Combo[]>([]);
+  // Combo con el menu de acciones (⋯) abierto.
+  readonly menuAbierto = signal<number | null>(null);
+
+  toggleMenu(id: number, event: Event): void {
+    event.stopPropagation();
+    this.menuAbierto.update((actual) => (actual === id ? null : id));
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  cerrarMenu(): void {
+    this.menuAbierto.set(null);
+  }
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly aviso = signal('');

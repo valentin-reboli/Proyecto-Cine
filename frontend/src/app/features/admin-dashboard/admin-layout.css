@@ -55,3 +55,4 @@
 .col-acciones .acciones-lista button { margin: 0; padding: 10px 12px; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--text-primary); text-align: left; font-size: 14px; font-weight: 500; cursor: pointer; }
 .col-acciones .acciones-lista button:hover { background: var(--accent-soft-12); }
 .col-acciones .acciones-lista .peligro { color: var(--accent-light); }
+.col-detalles { max-width: 320px; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
