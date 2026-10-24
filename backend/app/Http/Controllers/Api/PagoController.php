@@ -283,8 +283,11 @@ class PagoController extends Controller
         } catch (RuntimeException $e) {
             Log::error('Error con Mercado Pago: '.$e->getMessage());
 
+            // En modo prueba se muestra el motivo que dio Mercado Pago para poder corregir la configuracion.
+            $detalle = config('services.mercadopago.modo_prueba') ? ' ('.$e->getMessage().')' : '';
+
             throw new HttpResponseException(response()->json([
-                'message' => 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo.',
+                'message' => 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo.'.$detalle,
             ], 503));
         }
     }

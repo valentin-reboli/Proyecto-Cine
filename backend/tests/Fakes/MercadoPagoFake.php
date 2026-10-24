@@ -4,6 +4,7 @@ namespace Tests\Fakes;
 
 use App\Models\Reserva;
 use App\Services\MercadoPagoService;
+use RuntimeException;
 
 // Mercado Pago simulado para los tests: nunca se llama a la API real.
 // Como en el sandbox, el resultado lo decide el token: APRO aprueba, CONT queda pendiente y OTHE rechaza.
@@ -24,6 +25,10 @@ class MercadoPagoFake extends MercadoPagoService
 
     public function cobrarConTarjeta(Reserva $reserva, array $tarjeta): array
     {
+        if ($tarjeta['token'] === 'ERROR') {
+            throw new RuntimeException('Mercado Pago respondio 400: 2034 Invalid users involved');
+        }
+
         [$status, $detalle] = match ($tarjeta['token']) {
             'APRO' => ['approved', 'accredited'],
             'CONT' => ['in_process', 'pending_contingency'],

@@ -43,7 +43,7 @@ class MercadoPagoService
             'external_reference' => (string) $reserva->id,
             'notification_url' => $this->urlWebhook(),
             'payer' => array_filter([
-                'email' => $tarjeta['payer']['email'] ?? $reserva->invitado_correo,
+                'email' => $this->correoComprador($tarjeta['payer']['email'] ?? $reserva->invitado_correo),
                 'identification' => $tarjeta['payer']['identification'] ?? null,
             ]),
         ], fn ($valor) => $valor !== null), $opciones));
@@ -68,7 +68,8 @@ class MercadoPagoService
                 'currency_id' => 'ARS',
                 'unit_price' => (float) $reserva->total,
             ]],
-            'payer' => ['email' => $reserva->invitado_correo],
+            // En modo prueba el comprador inicia sesion en Mercado Pago con un usuario de prueba.
+            'payer' => config('services.mercadopago.modo_prueba') ? null : ['email' => $reserva->invitado_correo],
             'external_reference' => (string) $reserva->id,
             'back_urls' => ['success' => $vuelta, 'failure' => $vuelta, 'pending' => $vuelta],
             'auto_return' => 'approved',
@@ -100,6 +101,13 @@ class MercadoPagoService
         $this->llamar(fn () => (new PaymentRefundClient)->refundTotal((int) $id));
     }
 
+    // Con credenciales de prueba Mercado Pago rechaza pagos de correos de cuentas reales
+    // (o del propio vendedor): se usa el correo de comprador de prueba que indica su documentacion.
+    private function correoComprador(string $correo): string
+    {
+        return config('services.mercadopago.modo_prueba') ? 'test@testuser.com' : $correo;
+    }
+
     private function configurar(): void
     {
         $token = config('services.mercadopago.access_token');
@@ -116,8 +124,9 @@ class MercadoPagoService
         try {
             return $llamada();
         } catch (MPApiException $e) {
-            $respuesta = $e->getApiResponse();
-            $detalle = $respuesta ? json_encode($respuesta->getContent()) : $e->getMessage();
+            $contenido = (array) $e->getApiResponse()->getContent();
+            $causas = collect($contenido['cause'] ?? [])->map(fn ($c) => is_array($c) ? trim(($c['code'] ?? '').' '.($c['description'] ?? '')) : (string) $c)->filter();
+            $detalle = $causas->isNotEmpty() ? $causas->implode(' | ') : ($contenido['message'] ?? $e->getMessage());
 
             throw new RuntimeException('Mercado Pago respondio '.$e->getStatusCode().': '.$detalle, 0, $e);
         } catch (Throwable $e) {

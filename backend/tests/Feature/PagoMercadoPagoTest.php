@@ -220,4 +220,20 @@ class PagoMercadoPagoTest extends TestCase
         $respuesta = $this->getJson('/api/pagos/config')->assertOk()->assertJsonPath('public_key', 'TEST-publica');
         $this->assertStringNotContainsString('TEST-secreto', $respuesta->getContent());
     }
+
+    public function test_si_mercado_pago_falla_en_modo_prueba_se_muestra_el_motivo(): void
+    {
+        $reservaId = $this->reservar();
+
+        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'ERROR'))
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo. (Mercado Pago respondio 400: 2034 Invalid users involved)');
+
+        config(['services.mercadopago.modo_prueba' => false]);
+        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'ERROR'))
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo.');
+
+        $this->assertSame('pendiente', Reserva::find($reservaId)->estado);
+    }
 }
