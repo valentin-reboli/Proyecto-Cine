@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\DosPasosService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use OpenApi\Attributes as OA;
 
@@ -146,115 +144,8 @@ class UsuarioController extends Controller
         return response()->noContent();
     }
 
-    #[OA\Post(
-        path: '/api/usuarios/{usuario}/dos-pasos',
-        summary: 'Empezar a activar Google Authenticator para un usuario',
-        description: 'Genera un secreto nuevo y devuelve el QR para escanear con la app. Queda pendiente hasta confirmarlo con un codigo.',
-        tags: ['Usuarios'],
-        security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(name: 'usuario', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Secreto, link otpauth y QR (data URI SVG).'),
-            new OA\Response(response: 401, description: 'No autenticado.'),
-            new OA\Response(response: 404, description: 'Usuario inexistente.'),
-            new OA\Response(response: 422, description: 'El usuario ya tiene Google Authenticator activado.'),
-        ]
-    )]
-    public function iniciarDosPasos(User $usuario, DosPasosService $dosPasos)
-    {
-        if ($usuario->tieneDosPasos()) {
-            throw ValidationException::withMessages([
-                'dos_pasos' => ['Este usuario ya tiene Google Authenticator activado. Desactivalo primero para generar uno nuevo.'],
-            ]);
-        }
-
-        $secreto = $dosPasos->generarSecreto();
-        $usuario->forceFill(['dos_pasos_secreto' => $secreto, 'dos_pasos_activado_en' => null])->save();
-
-        $url = $dosPasos->urlParaApp($usuario, $secreto);
-
-        return [
-            'secreto' => $secreto,
-            'otpauth_url' => $url,
-            'qr' => $dosPasos->qr($url),
-        ];
-    }
-
-    #[OA\Post(
-        path: '/api/usuarios/{usuario}/dos-pasos/confirmar',
-        summary: 'Confirmar Google Authenticator con el primer codigo',
-        description: 'A partir de aca el login de ese usuario (email o Google) pide el codigo de 6 digitos.',
-        tags: ['Usuarios'],
-        security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(name: 'usuario', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['codigo'],
-                properties: [
-                    new OA\Property(property: 'codigo', type: 'string', example: '123456'),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: 'Google Authenticator activado.'),
-            new OA\Response(response: 401, description: 'No autenticado.'),
-            new OA\Response(response: 404, description: 'Usuario inexistente.'),
-            new OA\Response(response: 422, description: 'Codigo incorrecto o no se inicio la activacion.'),
-        ]
-    )]
-    public function confirmarDosPasos(Request $request, User $usuario, DosPasosService $dosPasos)
-    {
-        $data = $request->validate([
-            'codigo' => ['required', 'string'],
-        ]);
-
-        if ($usuario->dos_pasos_secreto === null || $usuario->tieneDosPasos()) {
-            throw ValidationException::withMessages([
-                'codigo' => ['Primero generá el QR de Google Authenticator para este usuario.'],
-            ]);
-        }
-
-        if (! $dosPasos->verificar($usuario->dos_pasos_secreto, $data['codigo'])) {
-            throw ValidationException::withMessages([
-                'codigo' => ['El codigo no es correcto. Revisá que sea el que muestra la app ahora.'],
-            ]);
-        }
-
-        $usuario->forceFill(['dos_pasos_activado_en' => now()])->save();
-
-        return $this->datos($usuario);
-    }
-
-    #[OA\Delete(
-        path: '/api/usuarios/{usuario}/dos-pasos',
-        summary: 'Desactivar Google Authenticator de un usuario',
-        tags: ['Usuarios'],
-        security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(name: 'usuario', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Google Authenticator desactivado.'),
-            new OA\Response(response: 401, description: 'No autenticado.'),
-            new OA\Response(response: 404, description: 'Usuario inexistente.'),
-        ]
-    )]
-    public function desactivarDosPasos(User $usuario)
-    {
-        $usuario->forceFill(['dos_pasos_secreto' => null, 'dos_pasos_activado_en' => null])->save();
-
-        return $this->datos($usuario);
-    }
-
     private function datos(User $usuario): array
     {
-        return $usuario->only(['id', 'name', 'email', 'created_at']) + [
-            'dos_pasos' => $usuario->tieneDosPasos(),
-        ];
+        return $usuario->only(['id', 'name', 'email', 'created_at']);
     }
 }

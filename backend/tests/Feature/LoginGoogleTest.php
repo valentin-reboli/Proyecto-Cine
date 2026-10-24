@@ -24,6 +24,16 @@ class LoginGoogleTest extends TestCase
         Http::fake(['oauth2.googleapis.com/*' => Http::response($payload, $status)]);
     }
 
+    public function test_el_login_con_contraseña_devuelve_el_token_directo(): void
+    {
+        User::factory()->create(['email' => 'admin@cineconcordia.com']);
+
+        $this->postJson('/api/login', ['email' => 'admin@cineconcordia.com', 'password' => 'password'])
+            ->assertOk()
+            ->assertJsonStructure(['user', 'token'])
+            ->assertJsonMissingPath('requiere_codigo');
+    }
+
     public function test_un_admin_registrado_entra_con_su_cuenta_de_google(): void
     {
         User::factory()->create(['email' => 'jacobo@cineconcordia.com']);

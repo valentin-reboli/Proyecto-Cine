@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\DosPasosService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +16,7 @@ class AuthController extends Controller
     #[OA\Post(
         path: '/api/login',
         summary: 'Iniciar sesion (admin)',
-        description: 'Autentica al admin por email/password y devuelve un token de Sanctum. Si el usuario tiene Google Authenticator activado, sin codigo responde requiere_codigo: true y hay que reenviar el pedido con el codigo de 6 digitos.',
+        description: 'Autentica al admin por email/password y devuelve un token de Sanctum.',
         tags: ['Autenticacion'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -26,13 +25,12 @@ class AuthController extends Controller
                 properties: [
                     new OA\Property(property: 'email', type: 'string', format: 'email', example: 'test@example.com'),
                     new OA\Property(property: 'password', type: 'string', format: 'password', example: 'password'),
-                    new OA\Property(property: 'codigo', type: 'string', example: '123456', description: 'Codigo de Google Authenticator (solo si el usuario lo tiene activado).'),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Login exitoso (user y token) o requiere_codigo: true si falta el codigo de Google Authenticator.'),
-            new OA\Response(response: 422, description: 'Credenciales invalidas o codigo de Google Authenticator incorrecto.'),
+            new OA\Response(response: 200, description: 'Login exitoso: devuelve user y token.'),
+            new OA\Response(response: 422, description: 'Credenciales invalidas.'),
         ]
     )]
     public function login(Request $request)
@@ -50,7 +48,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->firstOrFail();
 
-        return $this->responderLogin($request, $user);
+        return $this->responderLogin($user);
     }
 
     #[OA\Post(
@@ -64,13 +62,12 @@ class AuthController extends Controller
                 required: ['credential'],
                 properties: [
                     new OA\Property(property: 'credential', type: 'string', description: 'ID token (JWT) devuelto por el boton de Google.'),
-                    new OA\Property(property: 'codigo', type: 'string', example: '123456', description: 'Codigo de Google Authenticator (solo si el usuario lo tiene activado).'),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Login exitoso (user y token) o requiere_codigo: true si falta el codigo de Google Authenticator.'),
-            new OA\Response(response: 422, description: 'Token invalido, no verificado, sin cuenta de admin asociada o codigo de Google Authenticator incorrecto.'),
+            new OA\Response(response: 200, description: 'Login exitoso: devuelve user y token.'),
+            new OA\Response(response: 422, description: 'Token invalido, no verificado o sin cuenta de admin asociada.'),
         ]
     )]
     public function loginWithGoogle(Request $request)
@@ -120,26 +117,12 @@ class AuthController extends Controller
             ]);
         }
 
-        return $this->responderLogin($request, $user);
+        return $this->responderLogin($user);
     }
 
-    // Ultimo paso de los dos logins: si tiene Google Authenticator, pide y valida el codigo antes del token.
-    private function responderLogin(Request $request, User $user)
+    // Ultimo paso de los dos logins: entrega el token de Sanctum.
+    private function responderLogin(User $user)
     {
-        if ($user->tieneDosPasos()) {
-            $codigo = $request->input('codigo');
-
-            if (blank($codigo)) {
-                return response()->json(['requiere_codigo' => true]);
-            }
-
-            if (! app(DosPasosService::class)->verificar($user->dos_pasos_secreto, (string) $codigo)) {
-                throw ValidationException::withMessages([
-                    'codigo' => ['El codigo de Google Authenticator no es correcto.'],
-                ]);
-            }
-        }
-
         $token = $user->createToken('admin')->plainTextToken;
 
         return response()->json([

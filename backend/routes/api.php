@@ -25,7 +25,7 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/estado', EstadoController::class);
 
-// Limite de intentos: tambien frena que se adivine el codigo de Google Authenticator
+// Limite de intentos para frenar que se adivinen contraseñas
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/login/google', [AuthController::class, 'loginWithGoogle'])->middleware('throttle:10,1');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -102,7 +102,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/usuarios', [UsuarioController::class, 'store']);
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update']);
     Route::put('/usuarios/{usuario}/password', [UsuarioController::class, 'cambiarPassword']);
-    Route::post('/usuarios/{usuario}/dos-pasos', [UsuarioController::class, 'iniciarDosPasos']);
-    Route::post('/usuarios/{usuario}/dos-pasos/confirmar', [UsuarioController::class, 'confirmarDosPasos']);
-    Route::delete('/usuarios/{usuario}/dos-pasos', [UsuarioController::class, 'desactivarDosPasos']);
 });
