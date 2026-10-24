@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Reserva extends Model
 {
+    // Tiempo que quedan bloqueadas las butacas para que el cliente complete la compra.
+    public const MINUTOS_BLOQUEO = 8;
+
     protected $fillable = [
         'user_id',
         'funcion_id',
@@ -14,6 +17,7 @@ class Reserva extends Model
         'invitado_telefono',
         'total',
         'estado',
+        'token_bloqueo',
         'codigo_qr',
         'usada_en',
         'comprobante_enviado_en',
@@ -21,6 +25,9 @@ class Reserva extends Model
         'descuento_monto',
         'combos_total',
     ];
+
+    // El token solo se entrega una vez, al crear el bloqueo.
+    protected $hidden = ['token_bloqueo'];
 
     protected $casts = [
         'usada_en' => 'datetime',
