@@ -35,7 +35,49 @@
 
     <div class="booking-body">
       <div class="booking-main">
-        @if (step() === 'pelicula') {
+        @if (avisoPago(); as aviso) {
+          <div class="booking-step aviso-pago">
+            @if (aviso === 'verificando') {
+              <div class="aviso-spinner" aria-hidden="true"></div>
+              <h2>Verificando tu pago</h2>
+              <p class="step-sub">Estamos consultando el pago con Mercado Pago. No cierres esta página.</p>
+            } @else {
+              <div class="confirm-check aviso-pendiente">⏳</div>
+              <h2>Tu pago está en revisión</h2>
+              <p class="step-sub">
+                Mercado Pago está revisando el pago. Apenas se acredite te enviamos las entradas y el código QR
+                por correo. No hace falta que pagues de nuevo.
+              </p>
+              <button class="btn btn-primary btn-lg" (click)="reset()">Volver al inicio</button>
+            }
+          </div>
+        } @else if (step() === 'confirmation') {
+          <div class="booking-step confirmation-step">
+            <div class="confirm-check">✓</div>
+            <h2>¡Compra confirmada!</h2>
+            <p>Pago verificado y aprobado. Reserva Nº {{ reservaId() }}.</p>
+            <p>
+              @if (comprobanteEnviado()) {
+                Te enviamos el comprobante y el código QR por mensaje.
+              } @else {
+                No pudimos enviarte el comprobante por mensaje todavía; guardá este código QR.
+              }
+              Mostralo en la entrada del cine:
+            </p>
+            @if (qrSrc()) {
+              <img [src]="qrSrc()" alt="Código QR de tu entrada" class="qr-img" />
+            }
+            <div class="order-number">{{ codigo() }}</div>
+            @if (regalo(); as r) {
+              <div class="regalo-box">
+                <strong>🎁 Tu regalo: {{ r.porcentaje }}% de descuento en tu próxima compra</strong>
+                <span class="regalo-codigo">{{ r.codigo }}</span>
+                <span>Válido hasta el {{ fechaCorta(r.vence_en) }}. Ingresalo en el paso de pago al comprar (con este mismo correo).</span>
+              </div>
+            }
+            <button class="btn btn-primary btn-lg" (click)="reset()">Volver al inicio</button>
+          </div>
+        } @else if (step() === 'pelicula') {
           <div class="booking-step paso-pelicula">
             <h2>Elegí la película</h2>
             <p class="step-sub">Primero la película, después el día y el horario.</p>
@@ -194,79 +236,70 @@
           @case ('payment') {
             <div class="booking-step paso-pago">
               <h2>Pago</h2>
-              <p class="step-sub">Elegí cómo querés pagar.</p>
-              <div class="payment-methods">
-                @for (m of paymentMethods; track m.key) {
-                  <button
-                    class="payment-method-btn"
-                    [class.active]="paymentMethod() === m.key"
-                    (click)="setPaymentMethod(m.key)"
-                  >
-                    <span class="payment-icon" aria-hidden="true">{{ m.icon }}</span>
-                    <span class="payment-text">
-                      <span class="payment-label">{{ m.label }}</span>
-                      <span class="payment-detalle">{{ m.detalle }}</span>
-                    </span>
-                    @if (paymentMethod() === m.key) {
-                      <span class="payment-check">✓</span>
-                    }
-                  </button>
-                }
-              </div>
-              <div class="codigo-descuento">
-                <label class="codigo-label">¿Tenés un código de descuento?</label>
-                @if (descuento(); as d) {
-                  <p class="codigo-ok">
-                    Código {{ d.codigo }} aplicado: {{ d.porcentaje }}% de descuento
-                    <a class="edit-link" (click)="quitarCodigo()">Quitar</a>
-                  </p>
-                } @else {
-                  <div class="codigo-row">
-                    <input
-                      name="codigo"
-                      placeholder="CINE-XXXXXX"
-                      autocomplete="off"
-                      [(ngModel)]="codigoInput"
-                      (keyup.enter)="aplicarCodigo()"
-                    />
-                    <button type="button" class="btn" [disabled]="validandoCodigo() || !codigoInput.trim()" (click)="aplicarCodigo()">
-                      {{ validandoCodigo() ? 'Validando…' : 'Aplicar' }}
+              @if (cobro(); as c) {
+                <p class="step-sub">Total a pagar: <strong>{{ formatPrice(c.total) }}</strong> · Reserva Nº {{ c.reservaId }}</p>
+                <div class="mp-tarjeta">
+                  @if (cargandoFormulario()) {
+                    <p class="step-sub">Cargando el formulario seguro de Mercado Pago…</p>
+                  }
+                  <div id="mp-card-form"></div>
+                </div>
+                <p class="mp-cambiar"><a class="edit-link" (click)="cambiarMedioDePago()">Cambiar medio de pago</a></p>
+              } @else {
+                <p class="step-sub">Elegí cómo querés pagar. El pago se procesa con Mercado Pago.</p>
+                <div class="payment-methods">
+                  @for (m of paymentMethods; track m.key) {
+                    <button
+                      class="payment-method-btn"
+                      [class.active]="paymentMethod() === m.key"
+                      (click)="setPaymentMethod(m.key)"
+                    >
+                      <span class="payment-icon" aria-hidden="true">{{ m.icon }}</span>
+                      <span class="payment-text">
+                        <span class="payment-label">{{ m.label }}</span>
+                        <span class="payment-detalle">{{ m.detalle }}</span>
+                      </span>
+                      @if (paymentMethod() === m.key) {
+                        <span class="payment-check">✓</span>
+                      }
                     </button>
-                  </div>
-                  @if (errorCodigo()) { <span class="form-error">{{ errorCodigo() }}</span> }
-                }
-              </div>
+                  }
+                </div>
+                <div class="codigo-descuento">
+                  <label class="codigo-label">¿Tenés un código de descuento?</label>
+                  @if (descuento(); as d) {
+                    <p class="codigo-ok">
+                      Código {{ d.codigo }} aplicado: {{ d.porcentaje }}% de descuento
+                      <a class="edit-link" (click)="quitarCodigo()">Quitar</a>
+                    </p>
+                  } @else {
+                    <div class="codigo-row">
+                      <input
+                        name="codigo"
+                        placeholder="CINE-XXXXXX"
+                        autocomplete="off"
+                        [(ngModel)]="codigoInput"
+                        (keyup.enter)="aplicarCodigo()"
+                      />
+                      <button type="button" class="btn" [disabled]="validandoCodigo() || !codigoInput.trim()" (click)="aplicarCodigo()">
+                        {{ validandoCodigo() ? 'Validando…' : 'Aplicar' }}
+                      </button>
+                    </div>
+                    @if (errorCodigo()) { <span class="form-error">{{ errorCodigo() }}</span> }
+                  }
+                </div>
+              }
+              @if (modoPrueba) {
+                <p class="mp-prueba">
+                  Modo de prueba: no se cobra dinero real. Usá una
+                  <a href="https://www.mercadopago.com.ar/developers/es/docs/checkout-bricks/additional-content/your-integrations/test/cards" target="_blank" rel="noopener">tarjeta de prueba de Mercado Pago</a>
+                  (titular <strong>APRO</strong> para aprobar, <strong>OTHE</strong> para rechazar).
+                </p>
+              }
               <div class="secure-note">
                 <span aria-hidden="true">🔒</span>Tus butacas quedan reservadas {{ minutosBloqueo }} minutos · Recibís tus
                 entradas por email
               </div>
-            </div>
-          }
-          @case ('confirmation') {
-            <div class="booking-step confirmation-step">
-              <div class="confirm-check">✓</div>
-              <h2>¡Compra confirmada!</h2>
-              <p>Pago verificado y aprobado. Reserva Nº {{ reservaId() }}.</p>
-              <p>
-                @if (comprobanteEnviado()) {
-                  Te enviamos el comprobante y el código QR por mensaje.
-                } @else {
-                  No pudimos enviarte el comprobante por mensaje todavía; guardá este código QR.
-                }
-                Mostralo en la entrada del cine:
-              </p>
-              @if (qrSrc()) {
-                <img [src]="qrSrc()" alt="Código QR de tu entrada" class="qr-img" />
-              }
-              <div class="order-number">{{ codigo() }}</div>
-              @if (regalo(); as r) {
-                <div class="regalo-box">
-                  <strong>🎁 Tu regalo: {{ r.porcentaje }}% de descuento en tu próxima compra</strong>
-                  <span class="regalo-codigo">{{ r.codigo }}</span>
-                  <span>Válido hasta el {{ fechaCorta(r.vence_en) }}. Ingresalo en el paso de pago al comprar (con este mismo correo).</span>
-                </div>
-              }
-              <button class="btn btn-primary btn-lg" (click)="reset()">Volver al inicio</button>
             </div>
           }
         }
@@ -277,7 +310,7 @@
           <p class="form-error booking-error">{{ error() }}</p>
         }
 
-        @if (step() !== 'confirmation' && step() !== 'funcion' && step() !== 'pelicula') {
+        @if (step() !== 'confirmation' && step() !== 'funcion' && step() !== 'pelicula' && !cobro() && !avisoPago()) {
           <div class="continue-wrap" [class.continue-centrado]="step() !== 'pelicula' && step() !== 'funcion'">
             <button class="btn btn-primary btn-lg" [disabled]="continueDisabled()" (click)="handleContinue()">
               {{ continueLabel() }}

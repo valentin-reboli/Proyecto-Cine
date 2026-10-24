@@ -70,3 +70,11 @@
 .combo-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px 16px; }
 .combo-precio { font-size: 20px; font-weight: 700; color: var(--accent-light); }
 .combo-qty { display: flex; align-items: center; gap: 10px; }
+.mp-tarjeta { max-width: 520px; margin: 0 auto; }
+.mp-cambiar { text-align: center; margin-top: 12px; }
+.mp-prueba { max-width: 640px; margin: 16px auto 0; padding: 10px 14px; border: 1px dashed var(--border-strong); border-radius: var(--radius-md); font-size: 12px; color: var(--text-secondary); text-align: center; }
+.mp-prueba a { color: var(--accent-light); }
+.aviso-pago { text-align: center; padding: 40px 0; }
+.aviso-pendiente { font-size: 28px; }
+.aviso-spinner { width: 42px; height: 42px; margin: 0 auto 18px; border: 3px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: aviso-girar 0.9s linear infinite; }
+@keyframes aviso-girar { to { transform: rotate(360deg); } }

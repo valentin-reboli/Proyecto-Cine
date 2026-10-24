@@ -51,7 +51,13 @@ Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
 Route::post('/reservas/{reserva}/cancelar', [ReservaController::class, 'cancelar']);
 Route::post('/reservas/{reserva}/liberar', [ReservaController::class, 'liberar']);
-Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store']);
+
+// Pagos con Mercado Pago (el estado del pago se consulta siempre a Mercado Pago)
+Route::get('/pagos/config', [PagoController::class, 'config']);
+Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store'])->middleware('throttle:10,1');
+Route::post('/reservas/{reserva}/pago/preferencia', [PagoController::class, 'preferencia'])->middleware('throttle:10,1');
+Route::post('/reservas/{reserva}/pago/verificar', [PagoController::class, 'verificar'])->middleware('throttle:20,1');
+Route::post('/pagos/mercadopago/webhook', [PagoController::class, 'webhook']);
 
 // Gestion de admin (requiere login)
 Route::middleware('auth:sanctum')->group(function () {

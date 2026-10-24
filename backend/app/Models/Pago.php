@@ -8,8 +8,10 @@ class Pago extends Model
 {
     protected $fillable = [
         'reserva_id',
+        'mp_pago_id',
         'metodo',
         'estado',
+        'detalle',
         'comprobante',
         'monto',
         'pagado_en',

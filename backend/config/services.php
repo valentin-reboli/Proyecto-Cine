@@ -42,6 +42,19 @@ return [
         ],
     ],
 
+    'mercadopago' => [
+        // Credenciales de la aplicacion de Mercado Pago (Tus integraciones > Credenciales de prueba).
+        // Con las de prueba no se cobra dinero real. El access token es secreto: solo en el .env / Railway.
+        'access_token' => env('MP_ACCESS_TOKEN'),
+        'public_key' => env('MP_PUBLIC_KEY'),
+        // Clave secreta de las notificaciones (webhooks) para validar la firma x-signature.
+        'webhook_secret' => env('MP_WEBHOOK_SECRET'),
+        // Muestra en el front el aviso de modo prueba (tarjetas de prueba, sin dinero real).
+        'modo_prueba' => (bool) env('MP_MODO_PRUEBA', true),
+        // A donde vuelve el comprador despues de pagar en Checkout Pro (la pantalla de reserva del front).
+        'url_retorno' => env('MP_URL_RETORNO') ?: rtrim((string) env('APP_URL', 'http://localhost'), '/').'/reserva',
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
     ],

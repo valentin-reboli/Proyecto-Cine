@@ -2,12 +2,14 @@ import { Component, OnDestroy, OnInit, computed, effect, inject, signal, untrack
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import qrcode from 'qrcode-generator';
 import { API_URL } from '../../core/services/api.config';
 import { ComboService } from '../../core/services/combo.service';
 import { Combo } from '../../core/models/combo.model';
 import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
+import { BrickController, DatosTarjeta, MercadoPagoService, RespuestaPago } from '../../core/services/mercado-pago.service';
 import { Movie, Showtime } from '../../core/models/movie.model';
 import { Dia, agruparPorDia } from '../../core/utils/funciones';
 
@@ -44,6 +46,20 @@ interface ReservaVerificada {
   pagos?: { estado: string }[];
 }
 
+// Reserva creada que se esta cobrando con el formulario de tarjeta de Mercado Pago.
+interface Cobro {
+  reservaId: number;
+  total: number;
+  correo: string;
+}
+
+// Lo que se guarda antes de ir a Checkout Pro, para retomar al volver de Mercado Pago.
+interface PagoEnMercadoPago {
+  reservaId: number;
+  correo: string;
+  bloqueo: Bloqueo | null;
+}
+
 interface ProgressStep {
   key: Step;
   label: string;
@@ -56,6 +72,7 @@ interface ProgressStep {
 }
 
 const MAX_SEATS = 8;
+const PAGO_MP_KEY = 'cine_pago_mp';
 const MINUTOS_BLOQUEO = 8;
 const STEP_ORDER: Step[] = ['pelicula', 'funcion', 'seats', 'combos', 'datos', 'payment'];
 const STEP_LABELS: Record<Step, string> = {
@@ -76,6 +93,7 @@ const STEP_LABELS: Record<Step, string> = {
 export class BookingComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly mercadoPago = inject(MercadoPagoService);
   private readonly http = inject(HttpClient);
   private readonly bookingState = inject(BookingStateService);
   private readonly catalog = inject(CatalogService);
@@ -90,8 +108,8 @@ export class BookingComponent implements OnInit, OnDestroy {
   );
 
   readonly paymentMethods: { key: PaymentMethodKey; label: string; icon: string; detalle: string }[] = [
-    { key: 'tarjeta', label: 'Tarjeta de crédito / débito', icon: '💳', detalle: 'Visa, Mastercard, Amex' },
-    { key: 'mercadopago', label: 'Mercado Pago', icon: '📱', detalle: 'Dinero en cuenta o tarjetas guardadas' },
+    { key: 'tarjeta', label: 'Tarjeta de crédito / débito', icon: '💳', detalle: 'Visa, Mastercard, Amex · con Mercado Pago' },
+    { key: 'mercadopago', label: 'Cuenta de Mercado Pago', icon: '📱', detalle: 'Te llevamos a Mercado Pago para pagar' },
   ];
 
   readonly step = signal<Step>('pelicula');
@@ -106,6 +124,13 @@ export class BookingComponent implements OnInit, OnDestroy {
   readonly reservaId = signal<number | null>(null);
   readonly qrSrc = signal<string | null>(null);
   readonly comprobanteEnviado = signal(false);
+
+  // Pago con Mercado Pago
+  readonly cobro = signal<Cobro | null>(null);
+  readonly cargandoFormulario = signal(false);
+  readonly avisoPago = signal<'verificando' | 'pendiente' | null>(null);
+  modoPrueba = false;
+  private formularioTarjeta: BrickController | null = null;
 
   // Bloqueo de butacas: al elegirlas quedan reservadas MINUTOS_BLOQUEO minutos.
   readonly minutosBloqueo = MINUTOS_BLOQUEO;
@@ -193,6 +218,7 @@ export class BookingComponent implements OnInit, OnDestroy {
   });
 
   ngOnDestroy(): void {
+    this.desmontarFormulario();
     this.liberarBloqueo();
   }
 
@@ -223,6 +249,8 @@ export class BookingComponent implements OnInit, OnDestroy {
       this.pedidaPorUrl.set({ pelicula, funcion: Number.isFinite(funcion) && funcion > 0 ? funcion : null });
     }
     this.comboService.listActivos().subscribe({ next: (c) => this.combosDisponibles.set(c), error: () => {} });
+    this.mercadoPago.config().then((c) => (this.modoPrueba = c.modo_prueba), () => {});
+    this.volverDeMercadoPago();
   }
 
   langLabel(f: Showtime): string {
@@ -339,8 +367,11 @@ export class BookingComponent implements OnInit, OnDestroy {
   }
 
   continueLabel(): string {
-    if (this.procesando()) return this.step() === 'seats' ? 'Reservando tus butacas…' : 'Procesando y verificando el pago…';
-    return this.step() === 'payment' ? `Confirmar compra · ${this.formatPrice(this.total())}` : 'Continuar';
+    if (this.procesando()) return this.step() === 'seats' ? 'Reservando tus butacas…' : 'Preparando el pago…';
+    if (this.step() !== 'payment') return 'Continuar';
+    return this.paymentMethod() === 'mercadopago'
+      ? `Pagar con Mercado Pago · ${this.formatPrice(this.total())}`
+      : `Pagar con tarjeta · ${this.formatPrice(this.total())}`;
   }
 
   handleContinue(): void {
@@ -357,6 +388,7 @@ export class BookingComponent implements OnInit, OnDestroy {
     this.error.set('');
     const step = this.step();
     if (step === 'confirmation') return this.reset();
+    if (this.cobro()) return this.cambiarMedioDePago();
     const pasos = this.pasos();
     const idx = pasos.indexOf(step);
     if (idx <= 0) return this.reset();
@@ -437,6 +469,7 @@ export class BookingComponent implements OnInit, OnDestroy {
 
   // Se termino el tiempo sin comprar: se liberan las butacas y vuelve al mapa.
   private tiempoAgotado(): void {
+    this.desmontarFormulario();
     this.liberarBloqueo();
     this.selectedSeats.set([]);
     const f = this.selection()?.showtime;
@@ -500,7 +533,7 @@ export class BookingComponent implements OnInit, OnDestroy {
     const correo = this.datos.correo.trim();
     const bloqueo = this.bloqueo();
     this.http
-      .post<{ id: number }>(`${API_URL}/reservas`, {
+      .post<{ id: number; total: string | number }>(`${API_URL}/reservas`, {
         funcion_id: sel.showtime.funcionId,
         asientos: this.selectedSeats(),
         invitado_nombre: this.datos.nombre.trim(),
@@ -513,7 +546,11 @@ export class BookingComponent implements OnInit, OnDestroy {
         bloqueo_token: bloqueo?.token ?? null,
       })
       .subscribe({
-        next: (reserva) => this.pagar(reserva.id, correo),
+        next: (reserva) => {
+          const cobro = { reservaId: reserva.id, total: Number(reserva.total), correo };
+          if (this.paymentMethod() === 'mercadopago') this.irAMercadoPago(cobro);
+          else this.mostrarFormularioTarjeta(cobro);
+        },
         error: (err) => {
           this.procesando.set(false);
           if (err.status === 410) return this.tiempoAgotado();
@@ -528,22 +565,125 @@ export class BookingComponent implements OnInit, OnDestroy {
       });
   }
 
-  private pagar(reservaId: number, correo: string): void {
-    this.http
-      .post(`${API_URL}/reservas/${reservaId}/pago`, { correo, metodo: this.paymentMethod() })
-      .subscribe({
-        next: () => {
-          // Comprada: las butacas quedan ocupadas, ya no hay que liberarlas.
-          this.detenerReloj();
-          this.bloqueo.set(null);
-          this.verificarPago(reservaId, correo);
-        },
-        error: (err) => {
-          this.procesando.set(false);
-          if (err.status === 410) return this.tiempoAgotado();
-          this.error.set(err?.error?.message ?? 'No pudimos registrar el pago. Intentá de nuevo.');
-        },
-      });
+  // --- Pago con tarjeta: formulario de Mercado Pago (Card Payment Brick) ---
+
+  private mostrarFormularioTarjeta(cobro: Cobro): void {
+    this.procesando.set(false);
+    this.cobro.set(cobro);
+    this.cargandoFormulario.set(true);
+    // Se espera a que Angular dibuje el contenedor del formulario.
+    setTimeout(() =>
+      this.mercadoPago
+        .montarFormularioTarjeta('mp-card-form', cobro.total, cobro.correo, (datos) => this.pagarConTarjeta(datos))
+        .then((formulario) => {
+          // Si mientras cargaba se cambio de medio de pago, ya no se muestra.
+          if (this.cobro() !== cobro) return formulario.unmount();
+          this.formularioTarjeta = formulario;
+          this.cargandoFormulario.set(false);
+        })
+        .catch((e: Error) => {
+          this.cargandoFormulario.set(false);
+          this.cobro.set(null);
+          this.error.set(e?.message ?? 'No pudimos cargar el formulario de pago de Mercado Pago.');
+        }),
+    );
+  }
+
+  // Lo llama el formulario de Mercado Pago con la tarjeta ya convertida en token.
+  // El cobro lo hace el servidor; si se rechaza, el formulario queda para reintentar.
+  private async pagarConTarjeta(datos: DatosTarjeta): Promise<void> {
+    const cobro = this.cobro();
+    if (!cobro) return;
+    this.error.set('');
+    this.procesando.set(true);
+    try {
+      const respuesta = await firstValueFrom(this.mercadoPago.pagarConTarjeta(cobro.reservaId, cobro.correo, datos));
+      this.resultadoDelPago(cobro.reservaId, cobro.correo, respuesta);
+    } catch (err: any) {
+      this.procesando.set(false);
+      if (err.status === 410) return this.tiempoAgotado();
+      this.error.set(err?.error?.message ?? 'No pudimos procesar el pago. Intentá de nuevo.');
+      throw err;
+    }
+  }
+
+  cambiarMedioDePago(): void {
+    this.desmontarFormulario();
+    this.error.set('');
+  }
+
+  private desmontarFormulario(): void {
+    this.formularioTarjeta?.unmount();
+    this.formularioTarjeta = null;
+    this.cobro.set(null);
+    this.cargandoFormulario.set(false);
+  }
+
+  // Aprobado: se verifica la reserva y se muestra la entrada. Pendiente: Mercado Pago lo sigue revisando.
+  private resultadoDelPago(reservaId: number, correo: string, respuesta: RespuestaPago): void {
+    // Las butacas ya no se liberan desde el navegador: el servidor decide segun el pago.
+    this.detenerReloj();
+    this.bloqueo.set(null);
+    this.desmontarFormulario();
+    if (respuesta.estado === 'pendiente') {
+      this.procesando.set(false);
+      this.avisoPago.set('pendiente');
+      return;
+    }
+    this.verificarPago(reservaId, correo);
+  }
+
+  // --- Pago con la cuenta de Mercado Pago (Checkout Pro) ---
+
+  private irAMercadoPago(cobro: Cobro): void {
+    this.mercadoPago.crearPreferencia(cobro.reservaId, cobro.correo).subscribe({
+      next: ({ url }) => {
+        const pendiente: PagoEnMercadoPago = { reservaId: cobro.reservaId, correo: cobro.correo, bloqueo: this.bloqueo() };
+        sessionStorage.setItem(PAGO_MP_KEY, JSON.stringify(pendiente));
+        // Al salir de la pagina no se liberan las butacas: siguen reservadas mientras paga.
+        this.detenerReloj();
+        this.bloqueo.set(null);
+        window.location.href = url;
+      },
+      error: (err) => {
+        this.procesando.set(false);
+        if (err.status === 410) return this.tiempoAgotado();
+        this.error.set(err?.error?.message ?? 'No pudimos conectar con Mercado Pago. Intentá de nuevo.');
+      },
+    });
+  }
+
+  // Mercado Pago vuelve a /reserva?reserva=ID&payment_id=...: el servidor consulta el pago.
+  private volverDeMercadoPago(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const reservaId = Number(params.get('reserva'));
+    if (!reservaId) return;
+
+    let guardado: PagoEnMercadoPago | null = null;
+    try {
+      guardado = JSON.parse(sessionStorage.getItem(PAGO_MP_KEY) ?? 'null');
+    } catch {
+      guardado = null;
+    }
+    sessionStorage.removeItem(PAGO_MP_KEY);
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    if (!guardado || guardado.reservaId !== reservaId) return;
+
+    const pagoId = params.get('payment_id') ?? params.get('collection_id');
+    const correo = guardado.correo;
+    this.avisoPago.set('verificando');
+    this.mercadoPago.verificar(reservaId, correo, pagoId && /^\d+$/.test(pagoId) ? pagoId : null).subscribe({
+      next: (respuesta) => this.resultadoDelPago(reservaId, correo, respuesta),
+      error: (err) => {
+        this.avisoPago.set(null);
+        // No se pago: se liberan las butacas para que pueda empezar de nuevo.
+        if (err.status === 402 && guardado!.bloqueo) {
+          this.bloqueo.set(guardado!.bloqueo);
+          this.liberarBloqueo();
+        }
+        this.error.set(err?.error?.message ?? `No pudimos verificar el pago de la reserva Nº ${reservaId}. Escribinos con ese número.`);
+      },
+    });
   }
 
   // Antes de confirmar la compra se vuelve a consultar la reserva: tiene que figurar
@@ -553,6 +693,7 @@ export class BookingComponent implements OnInit, OnDestroy {
       .get<ReservaVerificada>(`${API_URL}/reservas/${reservaId}`, { params: { correo } })
       .subscribe({
         next: (reserva) => {
+          this.avisoPago.set(null);
           const aprobado = reserva.pagos?.some((p) => p.estado === 'aprobado');
           if (reserva.estado !== 'pagada' || !aprobado || !reserva.codigo_qr) {
             this.procesando.set(false);
@@ -573,6 +714,7 @@ export class BookingComponent implements OnInit, OnDestroy {
           this.step.set('confirmation');
         },
         error: () => {
+          this.avisoPago.set(null);
           this.procesando.set(false);
           this.error.set(
             `No pudimos verificar el pago de la reserva Nº ${reservaId}. No lo repitas: escribinos con ese número.`,
