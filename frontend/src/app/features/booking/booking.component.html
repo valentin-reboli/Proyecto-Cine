@@ -148,7 +148,7 @@
                 <div class="seat-map-inner">
                   <div class="screen-curve"></div>
                   <div class="screen-label">PANTALLA</div>
-                  <div class="seat-rows">
+                  <div class="seat-rows" [style.--filas]="seatRows().length">
                     @for (row of seatRows(); track row.row) {
                       <div class="seat-row">
                         <span class="seat-row-label">{{ row.row }}</span>

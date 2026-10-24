@@ -1302,3 +1302,20 @@ button { font-family: var(--font-body); }
   .hero-title { margin-bottom: 20px; }
   .hero-synopsis { font-size: 14px; margin-bottom: 24px; }
 }
+
+/* ===== Compra sin scroll: cada paso entra en la pantalla ===== */
+.booking-shell { padding-top: 14px; padding-bottom: 24px; }
+.booking-topbar { margin-bottom: 18px; }
+.booking-step h2 { font-size: 26px; margin-bottom: 4px; }
+.step-sub { margin-bottom: 16px; }
+.continue-wrap { margin-top: 18px; }
+.seat-legend { margin-bottom: 10px; }
+.bloqueo-aviso { margin-bottom: 12px; font-size: 13px; }
+.screen-label { margin-bottom: 14px; }
+.seat-summary { margin-top: 14px; padding-top: 12px; }
+.seat-map-wrap { padding-bottom: 0; }
+
+/* Las butacas se achican segun el alto de la pantalla y la cantidad de filas (entre 18px y 30px). */
+.seat-rows { --seat: clamp(18px, calc((100vh - 470px) / var(--filas, 8) - 6px), 30px); gap: 6px; }
+.seat-row-seats { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: var(--seat); gap: 5px; }
+.seat-btn { width: var(--seat); height: var(--seat); font-size: calc(var(--seat) * 0.38); }
