@@ -338,6 +338,18 @@ export class BookingComponent implements OnInit, OnDestroy {
     return this.cantidades()[c.id] ?? 0;
   }
 
+  // Carrusel de combos: avanza de a una pagina y al llegar a un extremo vuelve al otro.
+  moverCombos(pista: HTMLElement, dir: 1 | -1): void {
+    const max = pista.scrollWidth - pista.clientWidth;
+    const enFinal = pista.scrollLeft >= max - 2;
+    const enInicio = pista.scrollLeft <= 2;
+    // Una pagina = el ancho visible mas el espacio entre tarjetas, asi cae justo al inicio de un combo.
+    const pagina = pista.clientWidth + parseFloat(getComputedStyle(pista).columnGap || '0');
+    const destino = dir === 1 && enFinal ? 0 : dir === -1 && enInicio ? max : pista.scrollLeft + dir * pagina;
+    // Se acota al rango real: pasarse del final hace que el scroll-snap lo devuelva al inicio.
+    pista.scrollTo({ left: Math.max(0, Math.min(max, destino)), behavior: 'smooth' });
+  }
+
   cambiarCantidad(c: Combo, delta: number): void {
     const nueva = Math.max(0, Math.min(20, this.cantidadDe(c) + delta));
     this.cantidades.set({ ...this.cantidades(), [c.id]: nueva });

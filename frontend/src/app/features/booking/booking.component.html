@@ -185,7 +185,12 @@
             <div class="booking-step paso-combos">
               <h2>¿Querés agregar algo para comer o tomar?</h2>
               <p class="step-sub">Combos, pochoclos, bebidas y golosinas. Es opcional: podés continuar sin elegir nada.</p>
-              <div class="combo-grid">
+              <!-- Se ven 3 combos; con 4 o mas aparecen flechas y la lista se desliza de a una pagina. -->
+              <div class="combo-carrusel" [class.con-flechas]="combosDisponibles().length > 3">
+              @if (combosDisponibles().length > 3) {
+                <button type="button" class="combo-flecha combo-flecha-izq" aria-label="Combos anteriores" (click)="moverCombos(pista, -1)">‹</button>
+              }
+              <div class="combo-grid" #pista>
                 @for (c of combosDisponibles(); track c.id) {
                   <div class="combo-card" [class.combo-activo]="cantidadDe(c) > 0">
                     <!-- La foto entra completa (contain) sobre una copia desenfocada, asi se ve bien con cualquier tamano. -->
@@ -211,6 +216,10 @@
                     </div>
                   </div>
                 }
+              </div>
+              @if (combosDisponibles().length > 3) {
+                <button type="button" class="combo-flecha combo-flecha-der" aria-label="Más combos" (click)="moverCombos(pista, 1)">›</button>
+              }
               </div>
             </div>
           }

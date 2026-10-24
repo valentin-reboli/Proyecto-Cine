@@ -31,7 +31,15 @@
   .funcion-list { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
   .funcion-btn { flex: 0 0 auto; }
 }
-.combo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }
+.combo-carrusel { position: relative; margin-top: 18px; }
+.combo-grid { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 28px) / 3); gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+.combo-grid::-webkit-scrollbar { display: none; }
+.combo-grid > .combo-card { scroll-snap-align: start; }
+.combo-flecha { position: absolute; top: 38%; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-primary); font-size: 22px; line-height: 1; cursor: pointer; box-shadow: 0 6px 16px rgba(0, 0, 0, .45); }
+.combo-flecha:hover { border-color: var(--accent); color: var(--accent); }
+.combo-flecha-izq { left: -20px; }
+.combo-flecha-der { right: -20px; }
+@media (max-width: 700px) { .combo-grid { grid-auto-columns: 78%; } .combo-flecha { display: none; } }
 .combo-card { display: flex; flex-direction: column; border: 1px solid var(--border-strong); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
 .combo-activo { border-color: var(--accent); }
 .combo-desc { font-size: 12px; color: var(--text-secondary); }
