@@ -59,33 +59,46 @@
           @if (funcionesVisibles().length === 0) {
             <p class="admin-empty">No hay funciones próximas.</p>
           } @else {
-            <table class="admin-table">
+            <table class="admin-table admin-table-menu tabla-funciones">
               <thead>
                 <tr>
-                  <th>Película</th>
+                  <th class="col-pelicula">Película</th>
                   <th>Fecha</th>
                   <th>Horario</th>
                   <th>Sala</th>
                   <th>Formato</th>
                   <th>Idioma</th>
-                  <th>Precio</th>
+                  <th class="col-num">Precio</th>
                   <th class="col-acciones">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 @for (f of funcionesVisibles(); track f.id) {
                   <tr>
-                    <td><span class="admin-titulo">{{ f.pelicula?.titulo }}</span>@if (f.cancelada) { <em> · cancelada</em> }</td>
+                    <td class="col-pelicula"><span class="admin-titulo">{{ f.pelicula?.titulo }}</span>@if (f.cancelada) { <em> · cancelada</em> }</td>
                     <td>{{ fecha(f) }}</td>
                     <td>{{ hora(f) }}</td>
                     <td>{{ f.sala?.nombre }}</td>
                     <td>{{ f.formato?.nombre }}</td>
                     <td>{{ idiomaLabel(f.idioma) }}</td>
-                    <td>${{ f.precio_base }}</td>
+                    <td class="col-num">{{ precio(f) }}</td>
                     <td class="col-acciones">
                       @if (!f.cancelada) {
-                        <button type="button" class="btn-link" (click)="abrirEdicionFuncion(f)">Editar</button>
-                        <button type="button" class="admin-btn-danger" (click)="cancelarFuncion(f)">Cancelar</button>
+                        <div class="acciones-menu">
+                          <button
+                            type="button"
+                            class="acciones-toggle"
+                            [attr.aria-expanded]="menuAbierto() === f.id"
+                            [attr.aria-label]="'Acciones de la función de ' + (f.pelicula?.titulo ?? '')"
+                            (click)="toggleMenu(f.id, $event)"
+                          >⋯</button>
+                          @if (menuAbierto() === f.id) {
+                            <div class="acciones-lista" role="menu">
+                              <button type="button" role="menuitem" (click)="abrirEdicionFuncion(f)">Editar</button>
+                              <button type="button" role="menuitem" class="peligro" (click)="cancelarFuncion(f)">Cancelar función</button>
+                            </div>
+                          }
+                        </div>
                       }
                     </td>
                   </tr>

@@ -56,3 +56,7 @@
 .col-acciones .acciones-lista button:hover { background: var(--accent-soft-12); }
 .col-acciones .acciones-lista .peligro { color: var(--accent-light); }
 .col-detalles { max-width: 320px; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+/* Tabla de funciones: columnas cortas en una linea y la pelicula con ancho propio */
+.tabla-funciones td, .tabla-funciones th { white-space: nowrap; }
+.tabla-funciones .col-pelicula { white-space: normal; min-width: 200px; }
+.col-num { text-align: right; font-variant-numeric: tabular-nums; }

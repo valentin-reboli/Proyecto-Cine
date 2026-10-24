@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -43,6 +43,24 @@ export class AdminFuncionesComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   readonly tab = signal<Tab>('funciones');
+  // Funcion con el menu de acciones (⋯) abierto.
+  readonly menuAbierto = signal<number | null>(null);
+
+  toggleMenu(id: number, event: Event): void {
+    event.stopPropagation();
+    this.menuAbierto.update((actual) => (actual === id ? null : id));
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  cerrarMenu(): void {
+    this.menuAbierto.set(null);
+  }
+
+  // precio_base llega como texto ("3500.00"): se muestra como $3.500.
+  precio(f: AdminFuncion): string {
+    return '$' + Number(f.precio_base).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  }
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly aviso = signal('');
