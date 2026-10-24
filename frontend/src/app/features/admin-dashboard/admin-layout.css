@@ -72,3 +72,17 @@
 .admin-alta .field { flex: 1; min-width: 140px; }
 .admin-alta-btn { flex: 0 0 auto; padding: 13px 22px; box-shadow: none; }
 .col-corta { white-space: nowrap; }
+
+/* Modal con etiquetas y campos centrados (nueva funcion) */
+.admin-modal-centrado h2 { text-align: center; }
+.admin-modal-centrado .field { align-items: center; }
+.admin-modal-centrado .field-label { text-align: center; }
+.admin-modal-centrado .field input, .admin-modal-centrado .field select { text-align: center; text-align-last: center; }
+.admin-modal-centrado .admin-form-actions { justify-content: center; }
+.horarios { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; }
+.horarios input { width: 130px; }
+.horario-extra { position: relative; }
+.horario-quitar { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+.horario-quitar:hover { border-color: var(--accent); color: var(--accent); }
+.horario-agregar { margin-top: 4px; background: transparent; border: 1px dashed var(--border-strong); border-radius: 999px; color: var(--accent-light); padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.horario-agregar:hover { border-color: var(--accent); }

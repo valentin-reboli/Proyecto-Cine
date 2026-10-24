@@ -1,7 +1,7 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { AdminCineService } from '../../core/services/admin-cine.service';
 import { AdminPeliculaService } from '../../core/services/admin-pelicula.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -16,6 +16,8 @@ interface FuncionForm {
   formato_id: number;
   fecha: string;
   hora: string;
+  // Horarios adicionales al crear: se crea una funcion por cada uno con los mismos datos.
+  horasExtra: string[];
   idioma: Idioma;
   precio_base: number;
 }
@@ -26,6 +28,7 @@ const FUNCION_VACIA: FuncionForm = {
   formato_id: 0,
   fecha: '',
   hora: '',
+  horasExtra: [],
   idioma: 'DOB',
   precio_base: 7200,
 };
@@ -211,6 +214,7 @@ export class AdminFuncionesComponent implements OnInit {
       formato_id: f.formato_id,
       fecha: f.fecha_hora.slice(0, 10),
       hora: f.fecha_hora.slice(11, 16),
+      horasExtra: [],
       idioma: f.idioma,
       precio_base: Number(f.precio_base),
     };
@@ -223,29 +227,46 @@ export class AdminFuncionesComponent implements OnInit {
     this.mostrarFormFuncion.set(false);
   }
 
+  agregarHorario(): void {
+    this.form.horasExtra = [...this.form.horasExtra, ''];
+  }
+
+  quitarHorario(i: number): void {
+    this.form.horasExtra = this.form.horasExtra.filter((_, j) => j !== i);
+  }
+
   guardarFuncion(): void {
     const errores: Record<string, string> = {};
+    const horas = [this.form.hora, ...this.form.horasExtra].filter((h) => !!h);
     if (!this.form.pelicula_id) errores['pelicula_id'] = 'Elegí una película.';
     if (!this.form.sala_id) errores['sala_id'] = 'Elegí una sala.';
     if (!this.form.formato_id) errores['formato_id'] = 'Elegí un formato.';
     if (!this.form.fecha) errores['fecha'] = 'Indicá la fecha.';
     if (!this.form.hora) errores['hora'] = 'Indicá el horario.';
+    else if (this.form.horasExtra.some((h) => !h)) errores['hora'] = 'Completá o quitá los horarios vacíos.';
+    else if (new Set(horas).size !== horas.length) errores['hora'] = 'Hay horarios repetidos.';
     if (!(this.form.precio_base >= 0) || this.form.precio_base === null) errores['precio_base'] = 'Indicá el precio.';
     this.errores.set(errores);
     if (Object.keys(errores).length) return;
 
-    const payload: FuncionPayload = {
+    const payload = (hora: string): FuncionPayload => ({
       pelicula_id: this.form.pelicula_id,
       sala_id: this.form.sala_id,
       formato_id: this.form.formato_id,
-      fecha_hora: `${this.form.fecha} ${this.form.hora}`,
+      fecha_hora: `${this.form.fecha} ${hora}`,
       idioma: this.form.idioma,
       precio_base: this.form.precio_base,
-    };
+    });
     const id = this.funcionEditandoId();
     this.guardando.set(true);
     this.error.set('');
-    (id ? this.cine.updateFuncion(id, payload) : this.cine.createFuncion(payload)).subscribe({
+
+    if (!id && horas.length > 1) {
+      this.crearVarias(horas.map(payload));
+      return;
+    }
+
+    (id ? this.cine.updateFuncion(id, payload(this.form.hora)) : this.cine.createFuncion(payload(this.form.hora))).subscribe({
       next: () => {
         this.guardando.set(false);
         this.mostrarFormFuncion.set(false);
@@ -256,6 +277,32 @@ export class AdminFuncionesComponent implements OnInit {
         this.guardando.set(false);
         this.mostrarError(err, 'No se pudo guardar la función.');
       },
+    });
+  }
+
+  // Crea una funcion por horario; si alguna falla (por ejemplo, la sala ya esta ocupada) avisa cuales.
+  private crearVarias(payloads: FuncionPayload[]): void {
+    forkJoin(
+      payloads.map((p) =>
+        this.cine.createFuncion(p).pipe(
+          map(() => null),
+          catchError(() => of(p.fecha_hora.slice(11, 16))),
+        ),
+      ),
+    ).subscribe((resultados) => {
+      const fallidas = resultados.filter((h): h is string => h !== null);
+      this.guardando.set(false);
+      this.recargarFunciones();
+      if (fallidas.length === 0) {
+        this.mostrarFormFuncion.set(false);
+        this.mostrarAviso(`${payloads.length} funciones creadas.`);
+      } else {
+        const creadas = payloads.length - fallidas.length;
+        this.errores.set({ hora: `No se pudieron crear las de las ${fallidas.join(', ')}.` });
+        this.form.hora = fallidas[0];
+        this.form.horasExtra = fallidas.slice(1);
+        if (creadas) this.mostrarAviso(`${creadas} funciones creadas.`);
+      }
     });
   }
 

@@ -243,7 +243,7 @@
 
   @if (mostrarFormFuncion()) {
     <div class="admin-modal-backdrop" (click)="cerrarFormFuncion()">
-      <div class="admin-modal" (click)="$event.stopPropagation()">
+      <div class="admin-modal admin-modal-centrado" (click)="$event.stopPropagation()">
         <h2>{{ funcionEditandoId() ? 'Editar función' : 'Nueva función' }}</h2>
         <form class="admin-form" (ngSubmit)="guardarFuncion()">
           <label class="field">
@@ -256,17 +256,27 @@
             @if (errores()['pelicula_id']) { <span class="field-error">{{ errores()['pelicula_id'] }}</span> }
           </label>
 
-          <div class="admin-form-row">
-            <label class="field">
-              <span class="field-label">Fecha *</span>
-              <input type="date" name="fecha" [(ngModel)]="form.fecha" [class.field-invalid]="errores()['fecha']" />
-              @if (errores()['fecha']) { <span class="field-error">{{ errores()['fecha'] }}</span> }
-            </label>
-            <label class="field">
-              <span class="field-label">Horario *</span>
-              <input type="time" name="hora" [(ngModel)]="form.hora" [class.field-invalid]="errores()['hora']" />
-              @if (errores()['hora']) { <span class="field-error">{{ errores()['hora'] }}</span> }
-            </label>
+          <label class="field">
+            <span class="field-label">Fecha *</span>
+            <input type="date" name="fecha" [(ngModel)]="form.fecha" [class.field-invalid]="errores()['fecha']" />
+            @if (errores()['fecha']) { <span class="field-error">{{ errores()['fecha'] }}</span> }
+          </label>
+
+          <div class="field">
+            <span class="field-label">{{ funcionEditandoId() ? 'Horario *' : 'Horarios *' }}</span>
+            <div class="horarios">
+              <input type="time" name="hora" aria-label="Horario" [(ngModel)]="form.hora" [class.field-invalid]="errores()['hora']" />
+              @for (h of form.horasExtra; track $index; let i = $index) {
+                <div class="horario-extra">
+                  <input type="time" [name]="'hora_extra_' + i" [attr.aria-label]="'Horario ' + (i + 2)" [(ngModel)]="form.horasExtra[i]" />
+                  <button type="button" class="horario-quitar" [attr.aria-label]="'Quitar horario ' + (i + 2)" (click)="quitarHorario(i)">✕</button>
+                </div>
+              }
+            </div>
+            @if (!funcionEditandoId()) {
+              <button type="button" class="horario-agregar" (click)="agregarHorario()">+ Agregar horario</button>
+            }
+            @if (errores()['hora']) { <span class="field-error">{{ errores()['hora'] }}</span> }
           </div>
 
           <div class="admin-form-row">
