@@ -31,6 +31,7 @@ const pelicula: ApiPelicula = {
       precio_base: '3500.00',
       cancelada: false,
       formato: { id: 1, nombre: '2D' },
+      sala: { id: 1, nombre: 'Sala 1' },
     },
     {
       id: 12,
@@ -42,6 +43,7 @@ const pelicula: ApiPelicula = {
       precio_base: 4200,
       cancelada: false,
       formato: { id: 2, nombre: '3D' },
+      sala: { id: 1, nombre: 'Sala 1' },
     },
   ],
 };
@@ -71,9 +73,10 @@ describe('CatalogApiService', () => {
     expect(movies[0].id).toBe('7');
     expect(movies[0].genre).toBe('Accion');
     expect(movies[0].formats).toEqual(['2D', '3D']);
+    expect(movies[0].sala).toBe('Sala 1');
     expect(movies[0].todayTimes).toEqual([
-      { time: '15:30', lang: 'DOB', funcionId: 11, date: '2026-09-25', price: 3500 },
-      { time: '21:00', lang: 'SUB', funcionId: 12, date: '2026-09-26', price: 4200 },
+      { time: '15:30', lang: 'DOB', funcionId: 11, date: '2026-09-25', price: 3500, format: '2D', sala: 'Sala 1' },
+      { time: '21:00', lang: 'SUB', funcionId: 12, date: '2026-09-26', price: 4200, format: '3D', sala: 'Sala 1' },
     ]);
   });
 
