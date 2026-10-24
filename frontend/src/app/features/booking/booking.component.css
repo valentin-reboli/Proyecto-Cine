@@ -70,9 +70,3 @@
 .combo-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px 16px; }
 .combo-precio { font-size: 20px; font-weight: 700; color: var(--accent-light); }
 .combo-qty { display: flex; align-items: center; gap: 10px; }
-.combo-resumen { margin: 28px auto 0; max-width: 460px; display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; background: var(--surface-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); }
-.combo-resumen div { display: flex; justify-content: space-between; font-size: 16px; color: var(--text-secondary); }
-.combo-resumen div span:last-child { color: var(--text-primary); font-weight: 600; }
-.combo-resumen-total { margin-top: 4px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--accent-soft-12); border: 1px solid var(--accent); align-items: center; }
-.combo-resumen-total span { color: var(--text-primary) !important; font-size: 18px; font-weight: 700; }
-.combo-resumen-total span:last-child { font-family: var(--font-display); font-size: 28px; color: var(--accent) !important; }

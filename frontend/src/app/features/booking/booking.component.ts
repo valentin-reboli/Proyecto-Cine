@@ -155,7 +155,6 @@ export class BookingComponent implements OnInit, OnDestroy {
   readonly combosTotal = computed(() =>
     this.combosElegidos().reduce((sum, x) => sum + Number(x.combo.precio) * x.cantidad, 0),
   );
-  readonly combosCantidad = computed(() => this.combosElegidos().reduce((sum, x) => sum + x.cantidad, 0));
 
   // Entradas (con el descuento, que aplica solo a las entradas)
   readonly subtotal = computed(() => this.price() * this.selectedSeats().length);
