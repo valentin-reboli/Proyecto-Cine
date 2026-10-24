@@ -88,11 +88,11 @@
                           <button
                             type="button"
                             class="acciones-toggle"
-                            [attr.aria-expanded]="menuAbierto() === f.id"
+                            [attr.aria-expanded]="menuAbierto() === 'funcion-' + f.id"
                             [attr.aria-label]="'Acciones de la función de ' + (f.pelicula?.titulo ?? '')"
-                            (click)="toggleMenu(f.id, $event)"
+                            (click)="toggleMenu('funcion-' + f.id, $event)"
                           >⋯</button>
-                          @if (menuAbierto() === f.id) {
+                          @if (menuAbierto() === 'funcion-' + f.id) {
                             <div class="acciones-lista" role="menu">
                               <button type="button" role="menuitem" (click)="abrirEdicionFuncion(f)">Editar</button>
                               <button type="button" role="menuitem" class="peligro" (click)="cancelarFuncion(f)">Cancelar función</button>
@@ -119,10 +119,10 @@
           @if (peliculasExpiradas().length === 0) {
             <p class="admin-empty">Todas las películas tienen funciones próximas.</p>
           } @else {
-            <table class="admin-table">
+            <table class="admin-table tabla-centrada">
               <thead>
                 <tr>
-                  <th>Película</th>
+                  <th class="col-pelicula">Película</th>
                   <th>Última función</th>
                   <th>Funciones dadas</th>
                   <th class="col-acciones">Acciones</th>
@@ -131,11 +131,11 @@
               <tbody>
                 @for (e of peliculasExpiradas(); track e.peliculaId) {
                   <tr>
-                    <td><span class="admin-titulo">{{ e.pelicula?.titulo }}</span></td>
+                    <td class="col-pelicula"><span class="admin-titulo">{{ e.pelicula?.titulo }}</span></td>
                     <td>{{ fecha(e.ultima) }} · {{ hora(e.ultima) }}</td>
                     <td>{{ e.cantidad }}</td>
                     <td class="col-acciones">
-                      <button type="button" class="btn-link" (click)="reprogramar(e.peliculaId)">Reprogramar</button>
+                      <button type="button" class="btn-link btn-accion" (click)="reprogramar(e.peliculaId)">Reprogramar</button>
                     </td>
                   </tr>
                 }
@@ -149,7 +149,7 @@
         <section class="admin-section">
           <div class="admin-section-head"><h2>Salas <span class="admin-count">({{ salas().length }})</span></h2></div>
 
-          <form class="admin-form-row" (ngSubmit)="crearSala()">
+          <form class="admin-alta" (ngSubmit)="crearSala()">
             <label class="field">
               <span class="field-label">Nombre</span>
               <input type="text" name="sala_nombre" placeholder="Sala D" [(ngModel)]="nuevaSala.nombre" />
@@ -162,20 +162,33 @@
               <span class="field-label">Butacas por fila</span>
               <input type="number" name="sala_butacas" min="1" max="30" [(ngModel)]="nuevaSala.butacas_por_fila" />
             </label>
-            <button type="submit" class="btn btn-primary">+ Crear sala</button>
+            <button type="submit" class="btn btn-primary admin-alta-btn">+ Crear sala</button>
           </form>
 
-          <table class="admin-table">
-            <thead><tr><th>Sala</th><th>Butacas</th><th class="col-acciones">Acciones</th></tr></thead>
+          <table class="admin-table admin-table-menu tabla-centrada">
+            <thead><tr><th class="col-pelicula">Sala</th><th>Butacas</th><th class="col-acciones">Acciones</th></tr></thead>
             <tbody>
               @for (s of salas(); track s.id) {
                 <tr>
-                  <td><span class="admin-titulo">{{ s.nombre }}</span></td>
+                  <td class="col-pelicula"><span class="admin-titulo">{{ s.nombre }}</span></td>
                   <td>{{ s.asientos_count }}</td>
                   <td class="col-acciones">
-                    <button type="button" class="btn-link" (click)="abrirButacas(s)">Ver / bloquear butacas</button>
-                    <button type="button" class="btn-link" (click)="renombrarSala(s)">Renombrar</button>
-                    <button type="button" class="admin-btn-danger" (click)="borrarSala(s)">Borrar</button>
+<div class="acciones-menu">
+                      <button
+                        type="button"
+                        class="acciones-toggle"
+                        [attr.aria-expanded]="menuAbierto() === 'sala-' + s.id"
+                        [attr.aria-label]="'Acciones de ' + s.nombre"
+                        (click)="toggleMenu('sala-' + s.id, $event)"
+                      >⋯</button>
+                      @if (menuAbierto() === 'sala-' + s.id) {
+                        <div class="acciones-lista" role="menu">
+                          <button type="button" role="menuitem" (click)="abrirButacas(s)">Ver / bloquear butacas</button>
+                          <button type="button" role="menuitem" (click)="renombrarSala(s)">Renombrar</button>
+                          <button type="button" role="menuitem" class="peligro" (click)="borrarSala(s)">Borrar</button>
+                        </div>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -188,23 +201,36 @@
         <section class="admin-section">
           <div class="admin-section-head"><h2>Formatos <span class="admin-count">({{ formatos().length }})</span></h2></div>
 
-          <form class="admin-form-row" (ngSubmit)="crearFormato()">
+          <form class="admin-alta" (ngSubmit)="crearFormato()">
             <label class="field">
               <span class="field-label">Nuevo formato</span>
               <input type="text" name="formato_nombre" placeholder="3D, 2D, ATMOS…" [(ngModel)]="nuevoFormato" />
             </label>
-            <button type="submit" class="btn btn-primary">+ Agregar</button>
+            <button type="submit" class="btn btn-primary admin-alta-btn">+ Agregar</button>
           </form>
 
-          <table class="admin-table">
-            <thead><tr><th>Formato</th><th class="col-acciones">Acciones</th></tr></thead>
+          <table class="admin-table admin-table-menu tabla-centrada">
+            <thead><tr><th class="col-pelicula">Formato</th><th class="col-acciones">Acciones</th></tr></thead>
             <tbody>
               @for (f of formatos(); track f.id) {
                 <tr>
-                  <td><span class="admin-titulo">{{ f.nombre }}</span></td>
+                  <td class="col-pelicula"><span class="admin-titulo">{{ f.nombre }}</span></td>
                   <td class="col-acciones">
-                    <button type="button" class="btn-link" (click)="renombrarFormato(f)">Renombrar</button>
-                    <button type="button" class="admin-btn-danger" (click)="borrarFormato(f)">Borrar</button>
+                    <div class="acciones-menu">
+                      <button
+                        type="button"
+                        class="acciones-toggle"
+                        [attr.aria-expanded]="menuAbierto() === 'formato-' + f.id"
+                        [attr.aria-label]="'Acciones de ' + f.nombre"
+                        (click)="toggleMenu('formato-' + f.id, $event)"
+                      >⋯</button>
+                      @if (menuAbierto() === 'formato-' + f.id) {
+                        <div class="acciones-lista" role="menu">
+                          <button type="button" role="menuitem" (click)="renombrarFormato(f)">Renombrar</button>
+                          <button type="button" role="menuitem" class="peligro" (click)="borrarFormato(f)">Borrar</button>
+                        </div>
+                      }
+                    </div>
                   </td>
                 </tr>
               }

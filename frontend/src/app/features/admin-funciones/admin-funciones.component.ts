@@ -43,10 +43,10 @@ export class AdminFuncionesComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   readonly tab = signal<Tab>('funciones');
-  // Funcion con el menu de acciones (⋯) abierto.
-  readonly menuAbierto = signal<number | null>(null);
+  // Fila con el menu de acciones (⋯) abierto: 'funcion-3', 'sala-1', 'formato-2'.
+  readonly menuAbierto = signal<string | null>(null);
 
-  toggleMenu(id: number, event: Event): void {
+  toggleMenu(id: string, event: Event): void {
     event.stopPropagation();
     this.menuAbierto.update((actual) => (actual === id ? null : id));
   }
