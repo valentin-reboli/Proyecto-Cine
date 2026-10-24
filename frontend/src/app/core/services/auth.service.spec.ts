@@ -23,28 +23,22 @@ describe('AuthService', () => {
     localStorage.clear();
   });
 
-  it('si el usuario tiene Google Authenticator no guarda sesion hasta mandar el codigo', () => {
-    service.login('jacobo@cineconcordia.com', 'secreto123').subscribe((res) => {
-      expect(res.requiere_codigo).toBeTrue();
-    });
-    http.expectOne(`${API_URL}/login`).flush({ requiere_codigo: true });
-
+  it('el login con contraseña guarda la sesion', () => {
     expect(service.isLoggedIn()).toBeFalse();
-    expect(service.getToken()).toBeNull();
 
-    service.login('jacobo@cineconcordia.com', 'secreto123', '123456').subscribe();
+    service.login('jacobo@cineconcordia.com', 'secreto123').subscribe();
     const req = http.expectOne(`${API_URL}/login`);
-    expect(req.request.body).toEqual({ email: 'jacobo@cineconcordia.com', password: 'secreto123', codigo: '123456' });
+    expect(req.request.body).toEqual({ email: 'jacobo@cineconcordia.com', password: 'secreto123' });
     req.flush({ user: { id: 1, name: 'Jacobo', email: 'jacobo@cineconcordia.com' }, token: 'tok-1' });
 
     expect(service.isLoggedIn()).toBeTrue();
     expect(service.getToken()).toBe('tok-1');
   });
 
-  it('el login con Google manda el credential y el codigo', () => {
-    service.loginWithGoogle('jwt-de-google', '654321').subscribe();
+  it('el login con Google manda el credential y guarda la sesion', () => {
+    service.loginWithGoogle('jwt-de-google').subscribe();
     const req = http.expectOne(`${API_URL}/login/google`);
-    expect(req.request.body).toEqual({ credential: 'jwt-de-google', codigo: '654321' });
+    expect(req.request.body).toEqual({ credential: 'jwt-de-google' });
     req.flush({ user: { id: 1, name: 'Jacobo', email: 'jacobo@cineconcordia.com' }, token: 'tok-2' });
 
     expect(service.getToken()).toBe('tok-2');

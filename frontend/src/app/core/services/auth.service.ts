@@ -12,12 +12,9 @@ export interface AdminUser {
   email: string;
 }
 
-// Si el usuario tiene Google Authenticator, la primera respuesta trae solo requiere_codigo
-// y hay que repetir el login mandando el codigo de 6 digitos.
 export interface LoginResponse {
-  user?: AdminUser;
-  token?: string;
-  requiere_codigo?: boolean;
+  user: AdminUser;
+  token: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -35,15 +32,15 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string, codigo?: string): Observable<LoginResponse> {
+  login(email: string, password: string): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(`${API_URL}/login`, { email, password, codigo })
+      .post<LoginResponse>(`${API_URL}/login`, { email, password })
       .pipe(tap((res) => this.guardarSesion(res)));
   }
 
-  loginWithGoogle(credential: string, codigo?: string): Observable<LoginResponse> {
+  loginWithGoogle(credential: string): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(`${API_URL}/login/google`, { credential, codigo })
+      .post<LoginResponse>(`${API_URL}/login/google`, { credential })
       .pipe(tap((res) => this.guardarSesion(res)));
   }
 

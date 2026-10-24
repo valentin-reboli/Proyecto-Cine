@@ -4,15 +4,6 @@ export interface AdminUsuario {
   name: string;
   email: string;
   created_at: string;
-  // Google Authenticator activado (el login le pide el codigo de 6 digitos)
-  dos_pasos: boolean;
-}
-
-// Respuesta de POST /api/usuarios/{id}/dos-pasos: QR para escanear con la app
-export interface DosPasosQr {
-  secreto: string;
-  otpauth_url: string;
-  qr: string;
 }
 
 export interface AdminUsuarioForm {

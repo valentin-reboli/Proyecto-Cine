@@ -6,7 +6,7 @@ import { AdminPeliculaService } from '../../core/services/admin-pelicula.service
 import { AdminUsuarioService } from '../../core/services/admin-usuario.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminPelicula, AdminPeliculaForm, Genero } from '../../core/models/admin-pelicula.model';
-import { AdminUsuario, AdminUsuarioForm, CambioPasswordForm, DosPasosQr } from '../../core/models/admin-usuario.model';
+import { AdminUsuario, AdminUsuarioForm, CambioPasswordForm } from '../../core/models/admin-usuario.model';
 
 export const CLASIFICACIONES = ['ATP', '+13', '+16', '+18'];
 
@@ -110,10 +110,6 @@ export class AdminDashboardComponent implements OnInit {
   readonly usuarioEditando = signal<AdminUsuario | null>(null);
   formEdicion = { name: '', email: '' };
 
-  // Activacion de Google Authenticator (null = modal cerrado)
-  readonly usuarioDosPasos = signal<AdminUsuario | null>(null);
-  readonly qrDosPasos = signal<DosPasosQr | null>(null);
-  codigoDosPasos = '';
 
   ngOnInit(): void {
     if (this.vista === 'configuracion') {
@@ -486,82 +482,6 @@ export class AdminDashboardComponent implements OnInit {
         this.guardandoUsuario.set(false);
         this.error.set(err?.error?.message ?? 'No se pudo cambiar la contraseña.');
       },
-    });
-  }
-
-  // --- Google Authenticator ---
-
-  abrirDosPasos(usuario: AdminUsuario): void {
-    this.codigoDosPasos = '';
-    this.erroresUsuario.set({});
-    this.qrDosPasos.set(null);
-    this.usuarioDosPasos.set(usuario);
-    this.error.set('');
-
-    this.usuarioService.iniciarDosPasos(usuario.id).subscribe({
-      next: (qr) => this.qrDosPasos.set(qr),
-      error: (err) => {
-        this.usuarioDosPasos.set(null);
-        this.error.set(err?.error?.message ?? 'No se pudo generar el código QR.');
-      },
-    });
-  }
-
-  cerrarDosPasos(): void {
-    if (this.guardandoUsuario()) {
-      return;
-    }
-
-    this.usuarioDosPasos.set(null);
-    this.qrDosPasos.set(null);
-  }
-
-  confirmarDosPasos(): void {
-    const usuario = this.usuarioDosPasos();
-    const codigo = this.codigoDosPasos.replace(/\s+/g, '');
-
-    if (!/^\d{6}$/.test(codigo)) {
-      this.erroresUsuario.set({ codigo: 'Ingresá los 6 números que muestra la app.' });
-      return;
-    }
-
-    if (!usuario) {
-      return;
-    }
-
-    this.erroresUsuario.set({});
-    this.guardandoUsuario.set(true);
-
-    this.usuarioService.confirmarDosPasos(usuario.id, codigo).subscribe({
-      next: () => {
-        this.guardandoUsuario.set(false);
-        this.usuarioDosPasos.set(null);
-        this.qrDosPasos.set(null);
-        this.mostrarAviso(`Google Authenticator activado para ${usuario.email}.`);
-        this.cargarUsuarios();
-      },
-      error: (err) => {
-        this.guardandoUsuario.set(false);
-        this.erroresUsuario.set({
-          codigo: err?.error?.errors?.codigo?.[0] ?? 'No se pudo verificar el código.',
-        });
-      },
-    });
-  }
-
-  desactivarDosPasos(usuario: AdminUsuario): void {
-    if (!confirm(`¿Desactivar Google Authenticator para ${usuario.email}? Va a poder entrar solo con la contraseña o Google.`)) {
-      return;
-    }
-
-    this.error.set('');
-
-    this.usuarioService.desactivarDosPasos(usuario.id).subscribe({
-      next: () => {
-        this.mostrarAviso(`Google Authenticator desactivado para ${usuario.email}.`);
-        this.cargarUsuarios();
-      },
-      error: (err) => this.error.set(err?.error?.message ?? 'No se pudo desactivar Google Authenticator.'),
     });
   }
 
