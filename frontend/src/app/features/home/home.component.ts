@@ -128,10 +128,11 @@ export class HomeComponent implements OnDestroy {
     return m ? m[1] : null;
   }
 
-  // Las entradas se compran solo desde el boton "Comprar entradas": ahi se elige pelicula y funcion.
-  comprar(): void {
+  // Sin pelicula se arranca eligiendola; desde el detalle se salta a sus funciones (o a las butacas si se toco una funcion).
+  comprar(movie?: Movie, funcion?: Showtime): void {
     this.bookingState.clear();
-    this.router.navigateByUrl('/reserva');
+    const queryParams = movie ? { pelicula: movie.id, funcion: funcion?.funcionId ?? null } : {};
+    this.router.navigate(['/reserva'], { queryParams });
   }
 
   verDetalle(movie: Movie): void {

@@ -1,7 +1,7 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import qrcode from 'qrcode-generator';
 import { API_URL } from '../../core/services/api.config';
 import { ComboService } from '../../core/services/combo.service';
@@ -75,6 +75,7 @@ const STEP_LABELS: Record<Step, string> = {
 })
 export class BookingComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly bookingState = inject(BookingStateService);
   private readonly catalog = inject(CatalogService);
@@ -196,9 +197,32 @@ export class BookingComponent implements OnInit, OnDestroy {
     this.liberarBloqueo();
   }
 
+  // Pelicula/funcion pedidas por URL (?pelicula=ID&funcion=ID) desde el detalle de la cartelera.
+  private readonly pedidaPorUrl = signal<{ pelicula: string; funcion: number | null } | null>(null);
+
+  // El catalogo carga asincrono: cuando aparece la pelicula pedida, se salta directo a sus funciones.
+  private readonly abrirPedidaPorUrl = effect(() => {
+    const pedida = this.pedidaPorUrl();
+    if (!pedida) return;
+    const movie = this.peliculas().find((m) => m.id === pedida.pelicula);
+    if (!movie) return;
+    untracked(() => {
+      this.pedidaPorUrl.set(null);
+      this.elegirPelicula(movie);
+      const f = movie.todayTimes.find((t) => t.funcionId === pedida.funcion);
+      if (f) this.elegirFuncion(f);
+    });
+  });
+
   ngOnInit(): void {
-    // Siempre se arranca eligiendo la pelicula.
+    // Sin parametros se arranca eligiendo la pelicula.
     this.bookingState.clear();
+    const params = this.route.snapshot.queryParamMap;
+    const pelicula = params.get('pelicula');
+    if (pelicula) {
+      const funcion = Number(params.get('funcion'));
+      this.pedidaPorUrl.set({ pelicula, funcion: Number.isFinite(funcion) && funcion > 0 ? funcion : null });
+    }
     this.comboService.listActivos().subscribe({ next: (c) => this.combosDisponibles.set(c), error: () => {} });
   }
 

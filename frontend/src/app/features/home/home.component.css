@@ -31,8 +31,8 @@
   .detalle-top { flex-direction: column; }
   .detalle-poster { flex-basis: auto; width: 140px; }
 }
-.detalle-chip { cursor: default; }
-.detalle-chip:hover { border-color: var(--border-strong); }
+.detalle-chip:hover { transform: translateY(-2px); }
+.detalle-chip { transition: border-color .2s, transform .2s; }
 .detalle-estreno { font-size: 20px; font-weight: 600; margin: 0; }
 .detalle-comprar { margin-top: 22px; }
 .coming-soon-card { cursor: pointer; }

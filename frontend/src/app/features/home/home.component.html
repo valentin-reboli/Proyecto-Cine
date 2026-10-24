@@ -266,17 +266,17 @@
         <div class="detalle-chips">
           @for (dia of detalleDias(); track dia.fecha) {
             @for (f of dia.funciones; track f.funcionId) {
-              <div class="detalle-chip">
+              <button type="button" class="detalle-chip" (click)="comprar(m, f)">
                 <span class="detalle-chip-dia">{{ dia.label }}</span>
                 <strong>{{ f.time }}</strong>
                 <span>{{ f.format }} · {{ langLabel(f) }}</span>
                 <span>{{ formatPrice(f.price ?? 0) }}</span>
-              </div>
+              </button>
             }
           }
         </div>
         <div class="detalle-comprar">
-          <button type="button" class="btn btn-primary" (click)="comprar()">Comprar entradas</button>
+          <button type="button" class="btn btn-primary" (click)="comprar(m)">Comprar entradas</button>
         </div>
       }
     </div>
