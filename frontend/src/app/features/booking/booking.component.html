@@ -1,4 +1,13 @@
   <div class="booking-shell">
+    @if (bloqueo() && step() !== 'confirmation') {
+      <div class="reloj-bloqueo" [class.reloj-urgente]="segundosRestantes() <= 60" role="timer" aria-live="off">
+        <span class="reloj-icono">⏱</span>
+        <div>
+          <strong class="reloj-tiempo">{{ tiempoRestante() }}</strong>
+          <span class="reloj-texto">para completar tu compra</span>
+        </div>
+      </div>
+    }
     <div class="booking-topbar">
       <button class="btn-back" (click)="handleBack()">‹ Volver</button>
       <div class="progress-steps">
@@ -87,6 +96,9 @@
                 <div><span class="swatch swatch-selected"></span>Seleccionada</div>
                 <div><span class="swatch swatch-occupied"></span>Ocupada</div>
               </div>
+              <p class="step-sub bloqueo-aviso">
+                Al continuar, tus butacas quedan reservadas por {{ minutosBloqueo }} minutos para que completes la compra.
+              </p>
               @if (cargandoAsientos()) {
                 <p class="step-sub">Cargando butacas…</p>
               }
@@ -103,8 +115,8 @@
                             <button
                               class="seat-btn"
                               [class.selected]="isSelected(seat)"
-                              [class.occupied]="seat.estado !== 'disponible'"
-                              [disabled]="seat.estado !== 'disponible'"
+                              [class.occupied]="!seleccionable(seat)"
+                              [disabled]="!seleccionable(seat)"
                               (click)="toggleSeat(seat)"
                             >
                               {{ seat.numero }}
@@ -226,7 +238,7 @@
                 }
               </div>
               <div class="secure-note">
-                <span aria-hidden="true">🔒</span>Tus butacas quedan reservadas 10 minutos · Recibís tus
+                <span aria-hidden="true">🔒</span>Tus butacas quedan reservadas {{ minutosBloqueo }} minutos · Recibís tus
                 entradas por email
               </div>
             </div>

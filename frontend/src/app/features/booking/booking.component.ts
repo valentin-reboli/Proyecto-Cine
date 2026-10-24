@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -19,6 +19,14 @@ interface ApiAsiento {
   fila: string;
   numero: number;
   estado: 'disponible' | 'temporal' | 'ocupado' | 'bloqueado';
+}
+
+// Butacas bloqueadas para este cliente mientras completa la compra.
+interface Bloqueo {
+  id: number;
+  token: string;
+  asientos: number[];
+  segundos_restantes: number;
 }
 
 interface DescuentoRegalo {
@@ -48,6 +56,7 @@ interface ProgressStep {
 }
 
 const MAX_SEATS = 8;
+const MINUTOS_BLOQUEO = 8;
 const STEP_ORDER: Step[] = ['pelicula', 'funcion', 'seats', 'combos', 'datos', 'payment'];
 const STEP_LABELS: Record<Step, string> = {
   pelicula: 'Película',
@@ -64,7 +73,7 @@ const STEP_LABELS: Record<Step, string> = {
   templateUrl: './booking.component.html',
   styleUrl: './booking.component.css',
 })
-export class BookingComponent implements OnInit {
+export class BookingComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly bookingState = inject(BookingStateService);
@@ -96,6 +105,17 @@ export class BookingComponent implements OnInit {
   readonly reservaId = signal<number | null>(null);
   readonly qrSrc = signal<string | null>(null);
   readonly comprobanteEnviado = signal(false);
+
+  // Bloqueo de butacas: al elegirlas quedan reservadas MINUTOS_BLOQUEO minutos.
+  readonly minutosBloqueo = MINUTOS_BLOQUEO;
+  readonly bloqueo = signal<Bloqueo | null>(null);
+  readonly segundosRestantes = signal(0);
+  readonly tiempoRestante = computed(() => {
+    const s = this.segundosRestantes();
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  });
+  private vence = 0;
+  private reloj: ReturnType<typeof setInterval> | null = null;
 
   // Codigo de descuento (el que se regala con la compra anterior)
   readonly descuento = signal<{ codigo: string; porcentaje: number } | null>(null);
@@ -172,6 +192,10 @@ export class BookingComponent implements OnInit {
     });
   });
 
+  ngOnDestroy(): void {
+    this.liberarBloqueo();
+  }
+
   ngOnInit(): void {
     // Siempre se arranca eligiendo la pelicula.
     this.bookingState.clear();
@@ -208,6 +232,7 @@ export class BookingComponent implements OnInit {
   elegirFuncion(f: Showtime): void {
     const sel = this.selection();
     if (!sel) return;
+    this.liberarBloqueo();
     this.bookingState.select(sel.movie, f);
     this.selectedSeats.set([]);
     this.cantidades.set({});
@@ -216,12 +241,16 @@ export class BookingComponent implements OnInit {
     this.step.set('seats');
   }
 
-  private cargarAsientos(f: Showtime): void {
+  private cargarAsientos(f: Showtime, depurarSeleccion = false): void {
     this.cargandoAsientos.set(true);
     this.asientos.set([]);
     this.http.get<ApiAsiento[]>(`${API_URL}/funciones/${f.funcionId}/asientos`).subscribe({
       next: (asientos) => {
         this.asientos.set(asientos);
+        if (depurarSeleccion) {
+          const libres = asientos.filter((a) => this.seleccionable(a)).map((a) => a.id);
+          this.selectedSeats.set(this.selectedSeats().filter((id) => libres.includes(id)));
+        }
         this.cargandoAsientos.set(false);
       },
       error: () => {
@@ -237,8 +266,13 @@ export class BookingComponent implements OnInit {
     return this.selectedSeats().includes(a.id);
   }
 
+  // Las butacas que bloqueo este mismo cliente figuran como temporales, pero las puede seguir tocando.
+  seleccionable(a: ApiAsiento): boolean {
+    return a.estado === 'disponible' || !!this.bloqueo()?.asientos.includes(a.id);
+  }
+
   toggleSeat(a: ApiAsiento): void {
-    if (a.estado !== 'disponible') return;
+    if (!this.seleccionable(a)) return;
     const seats = this.selectedSeats();
     if (seats.includes(a.id)) {
       this.selectedSeats.set(seats.filter((id) => id !== a.id));
@@ -282,14 +316,15 @@ export class BookingComponent implements OnInit {
   }
 
   continueLabel(): string {
-    if (this.procesando()) return 'Procesando y verificando el pago…';
+    if (this.procesando()) return this.step() === 'seats' ? 'Reservando tus butacas…' : 'Procesando y verificando el pago…';
     return this.step() === 'payment' ? `Confirmar compra · ${this.formatPrice(this.total())}` : 'Continuar';
   }
 
   handleContinue(): void {
     this.error.set('');
     const step = this.step();
-    if (step === 'seats' || step === 'combos') this.step.set(this.siguienteDe(step));
+    if (step === 'seats') this.bloquearButacas();
+    else if (step === 'combos') this.step.set(this.siguienteDe(step));
     else if (step === 'datos') {
       if (this.validarDatos()) this.step.set('payment');
     } else if (step === 'payment') this.confirmPurchase();
@@ -302,11 +337,101 @@ export class BookingComponent implements OnInit {
     const pasos = this.pasos();
     const idx = pasos.indexOf(step);
     if (idx <= 0) return this.reset();
-    this.step.set(pasos[idx - 1]);
+    const anterior = pasos[idx - 1];
+    // Si vuelve a elegir funcion o pelicula, las butacas dejan de estar bloqueadas.
+    if (anterior === 'funcion' || anterior === 'pelicula') this.liberarBloqueo();
+    this.step.set(anterior);
   }
 
   goToStep(step: Step): void {
     this.step.set(step);
+  }
+
+  // --- Bloqueo de butacas ---
+
+  private mismasButacas(a: number[], b: number[]): boolean {
+    return a.length === b.length && a.every((id) => b.includes(id));
+  }
+
+  // Al continuar desde el mapa, las butacas quedan bloqueadas para los demas clientes.
+  // Si ya habia un bloqueo y se cambiaron las butacas, se reemplaza (el tiempo sigue corriendo).
+  private bloquearButacas(): void {
+    const sel = this.selection();
+    const seats = this.selectedSeats();
+    if (!sel?.showtime?.funcionId || seats.length === 0) return;
+
+    const actual = this.bloqueo();
+    if (actual && this.mismasButacas(actual.asientos, seats)) {
+      this.step.set(this.siguienteDe('seats'));
+      return;
+    }
+
+    this.procesando.set(true);
+    this.http
+      .post<Bloqueo>(`${API_URL}/reservas/bloquear`, {
+        funcion_id: sel.showtime.funcionId,
+        asientos: seats,
+        bloqueo_id: actual?.id ?? null,
+        bloqueo_token: actual?.token ?? null,
+      })
+      .subscribe({
+        next: (bloqueo) => {
+          this.procesando.set(false);
+          this.bloqueo.set(bloqueo);
+          this.iniciarReloj(bloqueo.segundos_restantes);
+          this.step.set(this.siguienteDe('seats'));
+        },
+        error: (err) => {
+          this.procesando.set(false);
+          if (err.status === 410 || err.status === 403) return this.tiempoAgotado();
+          if (err.status === 409) {
+            // Otro cliente se llevo alguna: se recarga el mapa y se sacan las que ya no estan libres.
+            this.cargarAsientos(sel.showtime!, true);
+          }
+          this.error.set(err?.error?.message ?? 'No pudimos reservar las butacas. Intentá de nuevo.');
+        },
+      });
+  }
+
+  private iniciarReloj(segundos: number): void {
+    this.detenerReloj();
+    this.vence = Date.now() + segundos * 1000;
+    this.actualizarReloj();
+    this.reloj = setInterval(() => this.actualizarReloj(), 1000);
+  }
+
+  private actualizarReloj(): void {
+    const quedan = Math.max(0, Math.ceil((this.vence - Date.now()) / 1000));
+    this.segundosRestantes.set(quedan);
+    // Si justo se esta pagando, se deja que el servidor decida.
+    if (quedan === 0 && !this.procesando()) this.tiempoAgotado();
+  }
+
+  private detenerReloj(): void {
+    if (this.reloj) clearInterval(this.reloj);
+    this.reloj = null;
+  }
+
+  // Se termino el tiempo sin comprar: se liberan las butacas y vuelve al mapa.
+  private tiempoAgotado(): void {
+    this.liberarBloqueo();
+    this.selectedSeats.set([]);
+    const f = this.selection()?.showtime;
+    if (f) {
+      this.cargarAsientos(f);
+      this.step.set('seats');
+    }
+    this.error.set(
+      `Se terminó el tiempo de ${MINUTOS_BLOQUEO} minutos para completar la compra y las butacas se liberaron. Elegilas de nuevo.`,
+    );
+  }
+
+  private liberarBloqueo(): void {
+    this.detenerReloj();
+    const bloqueo = this.bloqueo();
+    if (!bloqueo) return;
+    this.bloqueo.set(null);
+    this.http.post(`${API_URL}/reservas/${bloqueo.id}/liberar`, { token: bloqueo.token }).subscribe({ error: () => {} });
   }
 
   aplicarCodigo(): void {
@@ -350,6 +475,7 @@ export class BookingComponent implements OnInit {
     this.error.set('');
 
     const correo = this.datos.correo.trim();
+    const bloqueo = this.bloqueo();
     this.http
       .post<{ id: number }>(`${API_URL}/reservas`, {
         funcion_id: sel.showtime.funcionId,
@@ -360,11 +486,14 @@ export class BookingComponent implements OnInit {
         acepta_marketing: this.datos.acepta_marketing,
         codigo_descuento: this.descuento()?.codigo ?? null,
         combos: this.combosElegidos().map((x) => ({ combo_id: x.combo.id, cantidad: x.cantidad })),
+        bloqueo_id: bloqueo?.id ?? null,
+        bloqueo_token: bloqueo?.token ?? null,
       })
       .subscribe({
         next: (reserva) => this.pagar(reserva.id, correo),
         error: (err) => {
           this.procesando.set(false);
+          if (err.status === 410) return this.tiempoAgotado();
           if (err.status === 409) {
             // Alguien se llevo una de las butacas: se recargan para elegir otras.
             this.selectedSeats.set([]);
@@ -380,9 +509,15 @@ export class BookingComponent implements OnInit {
     this.http
       .post(`${API_URL}/reservas/${reservaId}/pago`, { correo, metodo: this.paymentMethod() })
       .subscribe({
-        next: () => this.verificarPago(reservaId, correo),
+        next: () => {
+          // Comprada: las butacas quedan ocupadas, ya no hay que liberarlas.
+          this.detenerReloj();
+          this.bloqueo.set(null);
+          this.verificarPago(reservaId, correo);
+        },
         error: (err) => {
           this.procesando.set(false);
+          if (err.status === 410) return this.tiempoAgotado();
           this.error.set(err?.error?.message ?? 'No pudimos registrar el pago. Intentá de nuevo.');
         },
       });
@@ -424,6 +559,7 @@ export class BookingComponent implements OnInit {
   }
 
   reset(): void {
+    this.liberarBloqueo();
     this.bookingState.clear();
     this.router.navigateByUrl('/');
   }
