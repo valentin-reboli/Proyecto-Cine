@@ -1,6 +1,6 @@
 /* Estilos compartidos por todas las pantallas del admin (se suman a admin-dashboard.component.css). */
 /* Pestanas de secciones del admin */
-.admin-tabs { display: flex; gap: 4px; margin: 8px 0 28px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 28px; border-bottom: 1px solid var(--border); }
 .admin-tab { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-secondary); font-family: var(--font-body); font-size: 15px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
 .admin-tab:hover { color: var(--text-primary); }
 .admin-tab.activo { color: var(--text-primary); border-bottom-color: var(--accent); }
@@ -73,12 +73,13 @@
 .admin-alta-btn { flex: 0 0 auto; padding: 13px 22px; box-shadow: none; }
 .col-corta { white-space: nowrap; }
 
-/* Modal con etiquetas y campos centrados (nueva funcion) */
-.admin-modal-centrado h2 { text-align: center; }
-.admin-modal-centrado .field { align-items: center; }
-.admin-modal-centrado .field-label { text-align: center; }
-.admin-modal-centrado .field input, .admin-modal-centrado .field select { text-align: center; text-align-last: center; }
-.admin-modal-centrado .admin-form-actions { justify-content: center; }
+/* Formularios del admin (crear/editar): textos centrados sin cambiar la distribucion */
+.admin-modal h2, .admin-modal .admin-modal-sub { text-align: center; }
+.admin-modal .field { align-items: center; }
+.admin-modal .field-label, .admin-modal .field-error { text-align: center; }
+.admin-modal .field input, .admin-modal .field select, .admin-modal .field textarea { text-align: center; text-align-last: center; }
+.admin-modal .remember { justify-content: center; }
+.admin-modal .admin-form-actions { justify-content: center; }
 .horarios { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; }
 .horarios input { width: 130px; }
 .horario-extra { position: relative; }

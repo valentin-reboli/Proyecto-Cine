@@ -243,7 +243,7 @@
 
   @if (mostrarFormFuncion()) {
     <div class="admin-modal-backdrop" (click)="cerrarFormFuncion()">
-      <div class="admin-modal admin-modal-centrado" (click)="$event.stopPropagation()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
         <h2>{{ funcionEditandoId() ? 'Editar función' : 'Nueva función' }}</h2>
         <form class="admin-form" (ngSubmit)="guardarFuncion()">
           <label class="field">
@@ -256,6 +256,7 @@
             @if (errores()['pelicula_id']) { <span class="field-error">{{ errores()['pelicula_id'] }}</span> }
           </label>
 
+          <div class="admin-form-row">
           <label class="field">
             <span class="field-label">Fecha *</span>
             <input type="date" name="fecha" [(ngModel)]="form.fecha" [class.field-invalid]="errores()['fecha']" />
@@ -277,6 +278,7 @@
               <button type="button" class="horario-agregar" (click)="agregarHorario()">+ Agregar horario</button>
             }
             @if (errores()['hora']) { <span class="field-error">{{ errores()['hora'] }}</span> }
+          </div>
           </div>
 
           <div class="admin-form-row">
