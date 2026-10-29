@@ -34,7 +34,7 @@ class MercadoPagoService
         $opciones->setCustomHeaders(['X-Idempotency-Key: reserva-'.$reserva->id.'-'.$tarjeta['token']]);
 
         $pago = $this->llamar(fn () => (new PaymentClient)->create(array_filter([
-            'transaction_amount' => (float) $reserva->total,
+            'transaction_amount' => $this->montoACobrar($reserva),
             'token' => $tarjeta['token'],
             'description' => 'Cine Concordia - Reserva Nº '.$reserva->id,
             'installments' => (int) $tarjeta['installments'],
@@ -66,7 +66,7 @@ class MercadoPagoService
                 'title' => 'Cine Concordia - Reserva Nº '.$reserva->id,
                 'quantity' => 1,
                 'currency_id' => 'ARS',
-                'unit_price' => (float) $reserva->total,
+                'unit_price' => $this->montoACobrar($reserva),
             ]],
             // En modo prueba el comprador inicia sesion en Mercado Pago con un usuario de prueba.
             'payer' => config('services.mercadopago.modo_prueba') ? null : ['email' => $reserva->invitado_correo],
@@ -133,6 +133,14 @@ class MercadoPagoService
             // Red caida, timeout, credenciales mal formadas: tampoco se puede saber el estado del pago.
             throw new RuntimeException('No se pudo contactar a Mercado Pago: '.$e->getMessage(), 0, $e);
         }
+    }
+
+    // Lo que se le cobra a Mercado Pago por la reserva: su total, o el monto fijo de MP_MONTO_COBRO si esta definido.
+    public function montoACobrar(Reserva $reserva): float
+    {
+        $fijo = config('services.mercadopago.monto_cobro');
+
+        return $fijo !== null ? (float) $fijo : (float) $reserva->total;
     }
 
     private function urlWebhook(): ?string

@@ -186,6 +186,37 @@ class PagoMercadoPagoTest extends TestCase
         $this->assertDatabaseHas('pagos', ['mp_pago_id' => $duplicado['id'], 'estado' => 'reembolsado']);
     }
 
+    public function test_con_monto_de_cobro_fijo_mercado_pago_cobra_diez_centavos_y_la_reserva_conserva_su_precio(): void
+    {
+        config(['services.mercadopago.monto_cobro' => 0.10]);
+        $reservaId = $this->reservar();
+
+        // El precio de la entrada no cambia: la reserva sigue valiendo 1000.
+        $this->assertEquals(1000, Reserva::find($reservaId)->total);
+
+        // A Mercado Pago se le pide el monto fijo.
+        $this->postJson("/api/reservas/{$reservaId}/pago/preferencia", ['correo' => 'ana@test.com'])->assertCreated();
+        $this->assertSame(0.10, $this->mercadoPago->preferencias[0]['monto']);
+
+        // Un pago de 10 centavos confirma la reserva...
+        $pago = $this->mercadoPago->agregarPago($reservaId, 0.10);
+        $this->postJson("/api/reservas/{$reservaId}/pago/verificar", ['correo' => 'ana@test.com', 'pago_id' => $pago['id']])
+            ->assertCreated()
+            ->assertJsonPath('reserva.estado', 'pagada');
+        $this->assertSame('ocupado', $this->estadoButaca());
+    }
+
+    public function test_con_monto_de_cobro_fijo_un_pago_por_el_total_no_confirma(): void
+    {
+        config(['services.mercadopago.monto_cobro' => 0.10]);
+        $reservaId = $this->reservar();
+
+        $pago = $this->mercadoPago->agregarPago($reservaId, 1000);
+        $this->postJson("/api/reservas/{$reservaId}/pago/verificar", ['correo' => 'ana@test.com', 'pago_id' => $pago['id']])
+            ->assertStatus(410);
+        $this->assertSame('pendiente', Reserva::find($reservaId)->estado);
+    }
+
     public function test_un_pago_por_un_monto_distinto_no_confirma_la_reserva(): void
     {
         $reservaId = $this->reservar();

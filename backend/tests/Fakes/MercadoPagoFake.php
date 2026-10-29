@@ -36,12 +36,12 @@ class MercadoPagoFake extends MercadoPagoService
             default => ['rejected', 'cc_rejected_other_reason'],
         };
 
-        return $this->agregarPago($reserva->id, (float) $reserva->total, $status, $detalle, $tarjeta['payment_method_id']);
+        return $this->agregarPago($reserva->id, $this->montoACobrar($reserva), $status, $detalle, $tarjeta['payment_method_id']);
     }
 
     public function crearPreferencia(Reserva $reserva, string $urlRetorno): array
     {
-        $this->preferencias[] = ['reserva_id' => $reserva->id, 'monto' => (float) $reserva->total, 'url_retorno' => $urlRetorno];
+        $this->preferencias[] = ['reserva_id' => $reserva->id, 'monto' => $this->montoACobrar($reserva), 'url_retorno' => $urlRetorno];
 
         return ['id' => 'pref-'.$reserva->id, 'url' => 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-'.$reserva->id];
     }

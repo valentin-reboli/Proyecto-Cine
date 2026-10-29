@@ -97,6 +97,8 @@ Variables del servicio web (cargarlas en Railway → Variables; nunca commitear 
 | `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Referencias al servicio Postgres: `${{Postgres.PGHOST}}`, `${{Postgres.PGPORT}}`, `${{Postgres.PGDATABASE}}`, `${{Postgres.PGUSER}}`, `${{Postgres.PGPASSWORD}}`. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Admin inicial del panel. La contraseña se vuelve a aplicar en cada arranque. |
 | `GOOGLE_CLIENT_ID` | Client ID de Google (debe ser el mismo que usa el front en `environment.production.ts`). |
+| `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`, `MP_MODO_PRUEBA` | Credenciales de Mercado Pago (Checkout Pro) y modo prueba (`true`/`false`). |
+| `MP_MONTO_COBRO` | Opcional. Monto fijo en pesos que se le cobra a Mercado Pago por compra (por ejemplo `0.10`), sin cambiar el precio que ve el cliente. Solo para probar cobros reales; **dejar vacío para cobrar el total**. |
 | `N8N_COMPRA_WEBHOOK` | Webhook de n8n que manda el comprobante, el QR y el código de descuento al comprador. |
 | `N8N_CAMPANIAS_WEBHOOK` | Webhook de n8n que envía las campañas de publicidad. |
 | `DESCUENTO_PORCENTAJE`, `DESCUENTO_VIGENCIA_DIAS` | Descuento que se regala en cada compra (por defecto 10 % y 30 días). Opcionales. |

@@ -105,7 +105,7 @@ class PagoService
     // Controles antes de dar por buena una compra con un pago aprobado.
     private function motivoParaNoConfirmar(Reserva $reserva, array $mp): ?string
     {
-        if (abs($mp['transaction_amount'] - (float) $reserva->total) > 0.01) {
+        if (abs($mp['transaction_amount'] - $this->mercadoPago->montoACobrar($reserva)) > 0.01) {
             return 'monto_incorrecto';
         }
 

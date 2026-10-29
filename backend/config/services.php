@@ -49,6 +49,10 @@ return [
         'public_key' => env('MP_PUBLIC_KEY'),
         // Clave secreta de las notificaciones (webhooks) para validar la firma x-signature.
         'webhook_secret' => env('MP_WEBHOOK_SECRET'),
+        // Monto fijo (en pesos) que se le cobra a Mercado Pago por cada compra, sin importar el precio de las
+        // entradas, que en el sitio se sigue mostrando entero. Sirve para probar cobros reales con centavos.
+        // Dejar vacio para cobrar el total de la reserva (valor normal de produccion).
+        'monto_cobro' => env('MP_MONTO_COBRO') !== null && env('MP_MONTO_COBRO') !== '' ? (float) env('MP_MONTO_COBRO') : null,
         // Muestra en el front el aviso de modo prueba (tarjetas de prueba, sin dinero real).
         'modo_prueba' => (bool) env('MP_MODO_PRUEBA', true),
         // A donde vuelve el comprador despues de pagar en Checkout Pro (la pantalla de reserva del front).
