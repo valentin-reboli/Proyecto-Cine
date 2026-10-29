@@ -9,6 +9,10 @@
       <p class="eyebrow">Acceso administrador</p>
       <h1>Iniciar sesi&oacute;n</h1>
 
+      @if (aviso()) {
+        <p class="login-aviso">{{ aviso() }}</p>
+      }
+
       @if (error()) {
         <p class="login-error">{{ error() }}</p>
       }

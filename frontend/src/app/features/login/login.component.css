@@ -165,6 +165,16 @@
   margin: 0 0 16px;
 }
 
+.login-aviso {
+  background: var(--surface-alt, #140f0b);
+  border: 1px solid var(--border-strong, #3a2c21);
+  color: var(--text-secondary, #cc945b);
+  font-size: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 4px);
+  margin: 0 0 16px;
+}
+
 .login-divider {
   display: flex;
   align-items: center;

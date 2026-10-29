@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -22,6 +22,12 @@ export class LoginComponent implements AfterViewInit {
 
   readonly enviando = signal(false);
   readonly error = signal('');
+  // Llega con ?motivo=inactividad cuando la sesion se cerro sola.
+  readonly aviso = signal(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('motivo') === 'inactividad'
+      ? 'Tu sesión se cerró por inactividad. Volvé a ingresar.'
+      : '',
+  );
 
   ngAfterViewInit(): void {
     this.loadGoogleScript(() => this.setupGoogleButton());
@@ -72,6 +78,7 @@ export class LoginComponent implements AfterViewInit {
   ingresar(): void {
     this.enviando.set(true);
     this.error.set('');
+    this.aviso.set('');
 
     this.auth.login(this.email, this.password).subscribe({
       next: () => this.entrarAlPanel(),
@@ -91,6 +98,7 @@ export class LoginComponent implements AfterViewInit {
   ingresarConGoogle(credential: string): void {
     this.enviando.set(true);
     this.error.set('');
+    this.aviso.set('');
 
     this.auth.loginWithGoogle(credential).subscribe({
       next: () => this.entrarAlPanel(),

@@ -70,6 +70,33 @@ test.describe('Panel de administrador', () => {
     expect((await publicos.json()).map((c: { nombre: string }) => c.nombre)).toContain('Combo E2E');
   });
 
+  test('despues de 4 horas sin usar el panel la sesion se cierra sola', async ({ page }) => {
+    await page.clock.install();
+    await loginAdmin(page);
+    await expect(page.getByRole('heading', { name: 'Cartelera', level: 1 })).toBeVisible();
+
+    // 3 horas sin tocar nada: sigue adentro.
+    await page.clock.fastForward('03:00:00');
+    await expect(page).toHaveURL(/\/admin$/);
+
+    // Pasadas las 4 horas: vuelve al login con el aviso.
+    await page.clock.fastForward('01:02:00');
+    await expect(page).toHaveURL(/\/login\?motivo=inactividad$/);
+    await expect(page.locator('.login-aviso')).toHaveText('Tu sesión se cerró por inactividad. Volvé a ingresar.');
+
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test('si el servidor ya no acepta el token, vuelve al login', async ({ page }) => {
+    await loginAdmin(page);
+    // Token vencido en el backend (equivale a 4 horas sin uso del lado del servidor).
+    await page.evaluate(() => localStorage.setItem('cc_admin_token', '999|token-vencido'));
+    await page.reload();
+    await expect(page).toHaveURL(/\/login\?motivo=inactividad$/);
+    await expect(page.locator('.login-aviso')).toBeVisible();
+  });
+
   test('cerrar sesion vuelve a pedir login', async ({ page }) => {
     await loginAdmin(page);
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
