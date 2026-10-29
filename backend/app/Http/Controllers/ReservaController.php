@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asiento;
-use App\Models\Cliente;
 use App\Models\Combo;
 use App\Models\Funcion;
 use App\Models\Reserva;
@@ -210,8 +209,6 @@ class ReservaController extends Controller
                     new OA\Property(property: 'asientos', type: 'array', items: new OA\Items(type: 'integer'), example: [1, 2, 3]),
                     new OA\Property(property: 'invitado_nombre', type: 'string', maxLength: 255, example: 'Ana'),
                     new OA\Property(property: 'invitado_correo', type: 'string', format: 'email', example: 'ana@x.com'),
-                    new OA\Property(property: 'invitado_telefono', type: 'string', maxLength: 30, nullable: true),
-                    new OA\Property(property: 'acepta_marketing', type: 'boolean', nullable: true, description: 'Si acepta recibir publicidad por correo/telefono.'),
                     new OA\Property(property: 'bloqueo_id', type: 'integer', nullable: true),
                     new OA\Property(property: 'bloqueo_token', type: 'string', nullable: true),
                 ]
@@ -233,8 +230,6 @@ class ReservaController extends Controller
             'asientos.*' => ['integer', 'distinct', 'exists:asientos,id'],
             'invitado_nombre' => ['required', 'string', 'max:255'],
             'invitado_correo' => ['required', 'email', 'max:255'],
-            'invitado_telefono' => ['nullable', 'string', 'max:30'],
-            'acepta_marketing' => ['nullable', 'boolean'],
             'codigo_descuento' => ['nullable', 'string', 'max:20'],
             'combos' => ['nullable', 'array', 'max:20'],
             'combos.*.combo_id' => ['required', 'integer', 'distinct'],
@@ -301,20 +296,10 @@ class ReservaController extends Controller
 
         try {
             $reserva = DB::transaction(function () use ($data, $funcion, $asientos, $descuento, $descuentoMonto, $subtotal, $pedidos, $combos, $combosTotal, $bloqueo) {
-                // Contacto para campañas: un registro por correo, siempre con los datos mas recientes.
-                $cliente = Cliente::firstOrNew(['correo' => strtolower($data['invitado_correo'])]);
-                $cliente->nombre = $data['invitado_nombre'];
-                $cliente->telefono = $data['invitado_telefono'] ?? $cliente->telefono;
-                if (array_key_exists('acepta_marketing', $data) && $data['acepta_marketing'] !== null) {
-                    $cliente->acepta_marketing = (bool) $data['acepta_marketing'];
-                }
-                $cliente->save();
-
                 $datosReserva = [
                     'funcion_id' => $funcion->id,
                     'invitado_nombre' => $data['invitado_nombre'],
                     'invitado_correo' => $data['invitado_correo'],
-                    'invitado_telefono' => $data['invitado_telefono'] ?? null,
                     'total' => $subtotal - $descuentoMonto + $combosTotal,
                     'combos_total' => $combosTotal,
                     'descuento_id' => $descuento?->id,

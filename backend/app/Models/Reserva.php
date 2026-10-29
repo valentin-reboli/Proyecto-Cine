@@ -17,7 +17,6 @@ class Reserva extends Model
         'funcion_id',
         'invitado_nombre',
         'invitado_correo',
-        'invitado_telefono',
         'total',
         'estado',
         'token_bloqueo',

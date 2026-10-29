@@ -236,14 +236,6 @@
                   <input name="correo" type="email" autocomplete="email" [(ngModel)]="datos.correo" />
                   @if (erroresDatos()['correo']) { <span class="form-error">{{ erroresDatos()['correo'] }}</span> }
                 </label>
-                <label>Teléfono
-                  <input name="telefono" type="tel" autocomplete="tel" placeholder="3456 123456" [(ngModel)]="datos.telefono" />
-                  @if (erroresDatos()['telefono']) { <span class="form-error">{{ erroresDatos()['telefono'] }}</span> }
-                </label>
-                <label class="check-row">
-                  <input name="acepta" type="checkbox" [(ngModel)]="datos.acepta_marketing" />
-                  <span>Acepto recibir novedades y promociones de Cine Concordia por correo y teléfono.</span>
-                </label>
               </div>
             </div>
           }

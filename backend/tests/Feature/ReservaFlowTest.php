@@ -13,6 +13,7 @@ use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class ReservaFlowTest extends TestCase
@@ -47,34 +48,25 @@ class ReservaFlowTest extends TestCase
         ]);
     }
 
-    public function test_la_reserva_guarda_el_contacto_para_campanias(): void
+    public function test_la_reserva_no_guarda_el_telefono_del_comprador(): void
     {
         $funcion = $this->crearFuncion();
-        $asientos = Asiento::where('sala_id', $funcion->sala_id)->get();
+        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
 
-        $this->postJson('/api/reservas', [
+        // Aunque un cliente viejo lo siga mandando, el telefono se ignora.
+        $reservaId = $this->postJson('/api/reservas', [
             'funcion_id' => $funcion->id,
-            'asientos' => [$asientos[0]->id],
+            'asientos' => [$asiento->id],
             'invitado_nombre' => 'Ana',
-            'invitado_correo' => 'Ana@Test.com',
+            'invitado_correo' => 'ana@test.com',
             'invitado_telefono' => '3456123456',
             'acepta_marketing' => true,
-        ])->assertCreated();
+        ])->assertCreated()->json('id');
 
-        $this->postJson('/api/reservas', [
-            'funcion_id' => $funcion->id,
-            'asientos' => [$asientos[1]->id],
-            'invitado_nombre' => 'Ana G',
-            'invitado_correo' => 'ana@test.com',
-        ])->assertCreated();
-
-        $this->assertDatabaseCount('clientes', 1);
-        $this->assertDatabaseHas('clientes', [
-            'correo' => 'ana@test.com',
-            'nombre' => 'Ana G',
-            'telefono' => '3456123456',
-            'acepta_marketing' => true,
-        ]);
+        $this->assertDatabaseHas('reservas', ['id' => $reservaId, 'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com']);
+        $this->assertFalse(Schema::hasColumn('reservas', 'invitado_telefono'));
+        $this->assertFalse(Schema::hasTable('clientes'));
+        $this->assertFalse(Schema::hasTable('campanias'));
     }
 
     public function test_flujo_completo_de_reserva_y_pago(): void
@@ -192,7 +184,6 @@ class ReservaFlowTest extends TestCase
             'asientos' => [$asiento->id],
             'invitado_nombre' => 'Ana',
             'invitado_correo' => 'ana@test.com',
-            'invitado_telefono' => '3456123456',
         ])->json('id');
 
         $pago = $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())

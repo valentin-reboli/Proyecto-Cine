@@ -37,12 +37,8 @@ test.describe('Panel de administrador', () => {
     await page.getByRole('link', { name: 'Combos' }).click();
     await expect(page.getByRole('heading', { name: 'Combos y snacks' })).toBeVisible();
 
-    // Campañas
-    await page.getByRole('link', { name: 'Campañas' }).click();
-    await expect(page.getByRole('heading', { name: 'Campañas', level: 1 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Campañas \(\d+\)/ })).toBeVisible();
-    await page.getByRole('button', { name: /^Contactos/ }).click();
-    await expect(page.getByRole('heading', { name: 'Contactos de compradores' })).toBeVisible();
+    // La seccion de campañas ya no existe.
+    await expect(page.getByRole('link', { name: 'Campañas' })).toHaveCount(0);
 
     // Configuracion (usuarios del panel)
     await page.getByRole('link', { name: 'Configuración' }).click();

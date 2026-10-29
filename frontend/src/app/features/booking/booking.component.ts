@@ -139,7 +139,7 @@ export class BookingComponent implements OnInit, OnDestroy {
   readonly regalo = signal<DescuentoRegalo | null>(null);
   codigoInput = '';
 
-  datos = { nombre: '', correo: '', telefono: '', acepta_marketing: false };
+  datos = { nombre: '', correo: '' };
 
   // Funciones programadas de la pelicula (las que ya pasaron no se muestran), agrupadas por dia.
   readonly dias = computed((): Dia[] => agruparPorDia(this.selection()?.movie.todayTimes ?? []));
@@ -354,8 +354,6 @@ export class BookingComponent implements OnInit, OnDestroy {
     const errores: Record<string, string> = {};
     if (!this.datos.nombre.trim()) errores['nombre'] = 'Ingresá tu nombre.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.datos.correo.trim())) errores['correo'] = 'Ingresá un correo válido.';
-    const tel = this.datos.telefono.replace(/[\s-]/g, '');
-    if (!/^\+?\d{8,15}$/.test(tel)) errores['telefono'] = 'Ingresá un teléfono válido (solo números).';
     this.erroresDatos.set(errores);
     return Object.keys(errores).length === 0;
   }
@@ -530,8 +528,6 @@ export class BookingComponent implements OnInit, OnDestroy {
         asientos: this.selectedSeats(),
         invitado_nombre: this.datos.nombre.trim(),
         invitado_correo: correo,
-        invitado_telefono: this.datos.telefono.trim(),
-        acepta_marketing: this.datos.acepta_marketing,
         codigo_descuento: this.descuento()?.codigo ?? null,
         combos: this.combosElegidos().map((x) => ({ combo_id: x.combo.id, cantidad: x.cantidad })),
         bloqueo_id: bloqueo?.id ?? null,

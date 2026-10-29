@@ -1,8 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CampaniaController;
-use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComboController;
 use App\Http\Controllers\DescuentoController;
 use App\Http\Controllers\EntradaController;
@@ -90,13 +88,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/combos', [ComboController::class, 'store']);
     Route::put('/combos/{combo}', [ComboController::class, 'update']);
     Route::delete('/combos/{combo}', [ComboController::class, 'destroy']);
-
-    Route::get('/clientes', [ClienteController::class, 'index']);
-    Route::get('/campanias', [CampaniaController::class, 'index']);
-    Route::post('/campanias', [CampaniaController::class, 'store']);
-    Route::put('/campanias/{campania}', [CampaniaController::class, 'update']);
-    Route::delete('/campanias/{campania}', [CampaniaController::class, 'destroy']);
-    Route::post('/campanias/{campania}/enviar', [CampaniaController::class, 'enviar']);
 
     Route::get('/usuarios', [UsuarioController::class, 'index']);
     Route::post('/usuarios', [UsuarioController::class, 'store']);

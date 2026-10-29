@@ -54,7 +54,6 @@ class CompraNotifier
                 'comprador' => [
                     'nombre' => $reserva->invitado_nombre,
                     'correo' => $reserva->invitado_correo,
-                    'telefono' => $reserva->invitado_telefono,
                 ],
                 'pelicula' => $funcion->pelicula->titulo,
                 'funcion' => [

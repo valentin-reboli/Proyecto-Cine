@@ -100,10 +100,9 @@ Variables del servicio web (cargarlas en Railway → Variables; nunca commitear 
 | `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`, `MP_MODO_PRUEBA` | Credenciales de Mercado Pago (Checkout Pro) y modo prueba (`true`/`false`). |
 | `MP_MONTO_COBRO` | Opcional. Monto fijo en pesos que se le cobra a Mercado Pago por compra (por ejemplo `0.10`), sin cambiar el precio que ve el cliente. Solo para probar cobros reales; **dejar vacío para cobrar el total**. |
 | `N8N_COMPRA_WEBHOOK` | Webhook de n8n que manda el comprobante, el QR y el código de descuento al comprador. |
-| `N8N_CAMPANIAS_WEBHOOK` | Webhook de n8n que envía las campañas de publicidad. |
 | `DESCUENTO_PORCENTAJE`, `DESCUENTO_VIGENCIA_DIAS` | Descuento que se regala en cada compra (por defecto 10 % y 30 días). Opcionales. |
 | `PORT` | Opcional; Railway lo define solo. |
 
-Las dos variables de n8n son opcionales: sin ellas la compra se confirma igual, pero no se envían los mensajes.
+La variable de n8n es opcional: sin ella la compra se confirma igual, pero no se envía el comprobante.
 
 Después de un deploy, verificar `/api/estado` (estado de la base) y `/docs` (Swagger).

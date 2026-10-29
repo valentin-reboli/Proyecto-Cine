@@ -37,7 +37,9 @@ test.describe('Compra de entradas', () => {
     await expect(datos).toBeVisible();
     await page.locator('input[name="nombre"]').fill('Cliente E2E');
     await page.locator('input[name="correo"]').fill('cliente@e2e.test');
-    await page.locator('input[name="telefono"]').fill('3435551234');
+    // Ya no se pide telefono ni permiso de publicidad.
+    await expect(page.locator('input[name="telefono"]')).toHaveCount(0);
+    await expect(page.locator('input[type="checkbox"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Continuar' }).click();
 
     // Paso 5: pago. Se crea la reserva en el backend (Mercado Pago no se prueba aca).

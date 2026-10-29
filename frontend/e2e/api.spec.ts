@@ -36,8 +36,6 @@ test.describe('API', () => {
       '/admin/funciones',
       '/admin/reservas',
       '/admin/combos',
-      '/clientes',
-      '/campanias',
       '/usuarios',
     ];
 
@@ -60,13 +58,13 @@ test.describe('API', () => {
 
     expect(spec.info.title).toBe('Cine Concordia API');
     expect(spec.components.securitySchemes.sanctum).toBeTruthy();
+    expect(Object.keys(spec.paths)).not.toContain('/api/campanias');
     for (const path of [
       '/api/login',
       '/api/peliculas',
       '/api/funciones',
       '/api/reservas',
       '/api/combos',
-      '/api/campanias',
       '/api/usuarios',
     ]) {
       expect(Object.keys(spec.paths), `Swagger documenta ${path}`).toContain(path);
