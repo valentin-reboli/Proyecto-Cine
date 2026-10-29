@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Asiento;
 use App\Models\Funcion;
 use App\Models\ReservaAsiento;

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Reserva extends Model
 {
+    use HasFactory;
+
     // Tiempo que quedan bloqueadas las butacas para que el cliente complete la compra.
     public const MINUTOS_BLOQUEO = 8;
 

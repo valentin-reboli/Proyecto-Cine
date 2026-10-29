@@ -1,21 +1,21 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CampaniaController;
-use App\Http\Controllers\Api\ClienteController;
-use App\Http\Controllers\Api\ComboController;
-use App\Http\Controllers\Api\DescuentoController;
-use App\Http\Controllers\Api\EntradaController;
-use App\Http\Controllers\Api\EstadoController;
-use App\Http\Controllers\Api\FormatoController;
-use App\Http\Controllers\Api\FuncionController;
-use App\Http\Controllers\Api\GeneroController;
-use App\Http\Controllers\Api\PagoController;
-use App\Http\Controllers\Api\QrController;
-use App\Http\Controllers\Api\PeliculaController;
-use App\Http\Controllers\Api\ReservaController;
-use App\Http\Controllers\Api\SalaController;
-use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CampaniaController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ComboController;
+use App\Http\Controllers\DescuentoController;
+use App\Http\Controllers\EntradaController;
+use App\Http\Controllers\EstadoController;
+use App\Http\Controllers\FormatoController;
+use App\Http\Controllers\FuncionController;
+use App\Http\Controllers\GeneroController;
+use App\Http\Controllers\PagoController;
+use App\Http\Controllers\QrController;
+use App\Http\Controllers\PeliculaController;
+use App\Http\Controllers\ReservaController;
+use App\Http\Controllers\SalaController;
+use App\Http\Controllers\UsuarioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
