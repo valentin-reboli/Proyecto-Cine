@@ -2,19 +2,17 @@ import { Component, OnDestroy, OnInit, computed, effect, inject, signal, untrack
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import qrcode from 'qrcode-generator';
 import { API_URL } from '../../core/services/api.config';
 import { ComboService } from '../../core/services/combo.service';
 import { Combo } from '../../core/models/combo.model';
 import { CatalogService } from '../../core/services/catalog.service';
 import { BookingStateService } from '../../core/services/booking-state.service';
-import { BrickController, DatosTarjeta, MercadoPagoService, RespuestaPago } from '../../core/services/mercado-pago.service';
+import { MercadoPagoService, RespuestaPago } from '../../core/services/mercado-pago.service';
 import { Movie, Showtime } from '../../core/models/movie.model';
 import { Dia, agruparPorDia } from '../../core/utils/funciones';
 
 type Step = 'pelicula' | 'funcion' | 'seats' | 'combos' | 'datos' | 'payment' | 'confirmation';
-type PaymentMethodKey = 'tarjeta' | 'mercadopago';
 
 interface ApiAsiento {
   id: number;
@@ -46,7 +44,7 @@ interface ReservaVerificada {
   pagos?: { estado: string }[];
 }
 
-// Reserva creada que se esta cobrando con el formulario de tarjeta de Mercado Pago.
+// Reserva creada que se va a cobrar en Mercado Pago.
 interface Cobro {
   reservaId: number;
   total: number;
@@ -107,16 +105,10 @@ export class BookingComponent implements OnInit, OnDestroy {
     this.catalog.movies().filter((m) => agruparPorDia(m.todayTimes).length > 0),
   );
 
-  readonly paymentMethods: { key: PaymentMethodKey; label: string; icon: string; detalle: string }[] = [
-    { key: 'tarjeta', label: 'Tarjeta de crédito / débito', icon: '💳', detalle: 'Visa, Mastercard, Amex · con Mercado Pago' },
-    { key: 'mercadopago', label: 'Cuenta de Mercado Pago', icon: '📱', detalle: 'Te llevamos a Mercado Pago para pagar' },
-  ];
-
   readonly step = signal<Step>('pelicula');
   readonly asientos = signal<ApiAsiento[]>([]);
   readonly cargandoAsientos = signal(false);
   readonly selectedSeats = signal<number[]>([]);
-  readonly paymentMethod = signal<PaymentMethodKey>('tarjeta');
   readonly procesando = signal(false);
   readonly error = signal('');
   readonly erroresDatos = signal<Record<string, string>>({});
@@ -126,11 +118,8 @@ export class BookingComponent implements OnInit, OnDestroy {
   readonly comprobanteEnviado = signal(false);
 
   // Pago con Mercado Pago
-  readonly cobro = signal<Cobro | null>(null);
-  readonly cargandoFormulario = signal(false);
   readonly avisoPago = signal<'verificando' | 'pendiente' | null>(null);
   modoPrueba = false;
-  private formularioTarjeta: BrickController | null = null;
 
   // Bloqueo de butacas: al elegirlas quedan reservadas MINUTOS_BLOQUEO minutos.
   readonly minutosBloqueo = MINUTOS_BLOQUEO;
@@ -218,7 +207,6 @@ export class BookingComponent implements OnInit, OnDestroy {
   });
 
   ngOnDestroy(): void {
-    this.desmontarFormulario();
     this.liberarBloqueo();
   }
 
@@ -381,9 +369,7 @@ export class BookingComponent implements OnInit, OnDestroy {
   continueLabel(): string {
     if (this.procesando()) return this.step() === 'seats' ? 'Reservando tus butacas…' : 'Preparando el pago…';
     if (this.step() !== 'payment') return 'Continuar';
-    return this.paymentMethod() === 'mercadopago'
-      ? `Pagar con Mercado Pago · ${this.formatPrice(this.total())}`
-      : `Pagar con tarjeta · ${this.formatPrice(this.total())}`;
+    return `Pagar con Mercado Pago · ${this.formatPrice(this.total())}`;
   }
 
   handleContinue(): void {
@@ -400,7 +386,6 @@ export class BookingComponent implements OnInit, OnDestroy {
     this.error.set('');
     const step = this.step();
     if (step === 'confirmation') return this.reset();
-    if (this.cobro()) return this.cambiarMedioDePago();
     const pasos = this.pasos();
     const idx = pasos.indexOf(step);
     if (idx <= 0) return this.reset();
@@ -481,7 +466,6 @@ export class BookingComponent implements OnInit, OnDestroy {
 
   // Se termino el tiempo sin comprar: se liberan las butacas y vuelve al mapa.
   private tiempoAgotado(): void {
-    this.desmontarFormulario();
     this.liberarBloqueo();
     this.selectedSeats.set([]);
     const f = this.selection()?.showtime;
@@ -530,10 +514,6 @@ export class BookingComponent implements OnInit, OnDestroy {
     this.errorCodigo.set('');
   }
 
-  setPaymentMethod(method: PaymentMethodKey): void {
-    this.paymentMethod.set(method);
-  }
-
   // --- Paso 4: crear la reserva y registrar el pago ---
 
   confirmPurchase(): void {
@@ -559,9 +539,7 @@ export class BookingComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (reserva) => {
-          const cobro = { reservaId: reserva.id, total: Number(reserva.total), correo };
-          if (this.paymentMethod() === 'mercadopago') this.irAMercadoPago(cobro);
-          else this.mostrarFormularioTarjeta(cobro);
+          this.irAMercadoPago({ reservaId: reserva.id, total: Number(reserva.total), correo });
         },
         error: (err) => {
           this.procesando.set(false);
@@ -577,66 +555,11 @@ export class BookingComponent implements OnInit, OnDestroy {
       });
   }
 
-  // --- Pago con tarjeta: formulario de Mercado Pago (Card Payment Brick) ---
-
-  private mostrarFormularioTarjeta(cobro: Cobro): void {
-    this.procesando.set(false);
-    this.cobro.set(cobro);
-    this.cargandoFormulario.set(true);
-    // Se espera a que Angular dibuje el contenedor del formulario.
-    setTimeout(() =>
-      this.mercadoPago
-        .montarFormularioTarjeta('mp-card-form', cobro.total, cobro.correo, (datos) => this.pagarConTarjeta(datos))
-        .then((formulario) => {
-          // Si mientras cargaba se cambio de medio de pago, ya no se muestra.
-          if (this.cobro() !== cobro) return formulario.unmount();
-          this.formularioTarjeta = formulario;
-          this.cargandoFormulario.set(false);
-        })
-        .catch((e: Error) => {
-          this.cargandoFormulario.set(false);
-          this.cobro.set(null);
-          this.error.set(e?.message ?? 'No pudimos cargar el formulario de pago de Mercado Pago.');
-        }),
-    );
-  }
-
-  // Lo llama el formulario de Mercado Pago con la tarjeta ya convertida en token.
-  // El cobro lo hace el servidor; si se rechaza, el formulario queda para reintentar.
-  private async pagarConTarjeta(datos: DatosTarjeta): Promise<void> {
-    const cobro = this.cobro();
-    if (!cobro) return;
-    this.error.set('');
-    this.procesando.set(true);
-    try {
-      const respuesta = await firstValueFrom(this.mercadoPago.pagarConTarjeta(cobro.reservaId, cobro.correo, datos));
-      this.resultadoDelPago(cobro.reservaId, cobro.correo, respuesta);
-    } catch (err: any) {
-      this.procesando.set(false);
-      if (err.status === 410) return this.tiempoAgotado();
-      this.error.set(err?.error?.message ?? 'No pudimos procesar el pago. Intentá de nuevo.');
-      throw err;
-    }
-  }
-
-  cambiarMedioDePago(): void {
-    this.desmontarFormulario();
-    this.error.set('');
-  }
-
-  private desmontarFormulario(): void {
-    this.formularioTarjeta?.unmount();
-    this.formularioTarjeta = null;
-    this.cobro.set(null);
-    this.cargandoFormulario.set(false);
-  }
-
   // Aprobado: se verifica la reserva y se muestra la entrada. Pendiente: Mercado Pago lo sigue revisando.
   private resultadoDelPago(reservaId: number, correo: string, respuesta: RespuestaPago): void {
     // Las butacas ya no se liberan desde el navegador: el servidor decide segun el pago.
     this.detenerReloj();
     this.bloqueo.set(null);
-    this.desmontarFormulario();
     if (respuesta.estado === 'pendiente') {
       this.procesando.set(false);
       this.avisoPago.set('pendiente');
@@ -645,7 +568,7 @@ export class BookingComponent implements OnInit, OnDestroy {
     this.verificarPago(reservaId, correo);
   }
 
-  // --- Pago con la cuenta de Mercado Pago (Checkout Pro) ---
+  // --- Pago con Mercado Pago (Checkout Pro): se redirige a su sitio y ahi elige tarjeta, debito o dinero en cuenta ---
 
   private irAMercadoPago(cobro: Cobro): void {
     this.mercadoPago.crearPreferencia(cobro.reservaId, cobro.correo).subscribe({

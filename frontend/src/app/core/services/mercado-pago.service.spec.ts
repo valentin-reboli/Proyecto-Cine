@@ -28,19 +28,15 @@ describe('MercadoPagoService', () => {
     expect((await segunda).modo_prueba).toBeTrue();
   });
 
-  it('manda el token de la tarjeta y el correo al backend, nunca los datos de la tarjeta', () => {
-    service
-      .pagarConTarjeta(5, 'ana@test.com', { token: 'tok-1', payment_method_id: 'visa', installments: 1 })
-      .subscribe();
+  it('crea la preferencia de Checkout Pro y devuelve el link de pago', () => {
+    let url = '';
+    service.crearPreferencia(5, 'ana@test.com').subscribe((r) => (url = r.url));
 
-    const req = http.expectOne(`${API_URL}/reservas/5/pago`);
-    expect(req.request.body).toEqual({
-      token: 'tok-1',
-      payment_method_id: 'visa',
-      installments: 1,
-      correo: 'ana@test.com',
-    });
-    req.flush({ estado: 'aprobado' });
+    const req = http.expectOne(`${API_URL}/reservas/5/pago/preferencia`);
+    expect(req.request.body).toEqual({ correo: 'ana@test.com' });
+    req.flush({ id: 'pref-1', url: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1' });
+
+    expect(url).toContain('mercadopago.com.ar');
   });
 
   it('verifica el pago de Checkout Pro contra el backend', () => {
@@ -52,12 +48,5 @@ describe('MercadoPagoService', () => {
     req.flush({ estado: 'aprobado' });
 
     expect(estado).toBe('aprobado');
-  });
-
-  it('avisa si Mercado Pago no esta configurado', async () => {
-    const promesa = service.montarFormularioTarjeta('mp-card-form', 1000, 'ana@test.com', async () => {});
-    http.expectOne(`${API_URL}/pagos/config`).flush({ habilitado: false, public_key: null, modo_prueba: true });
-
-    await expectAsync(promesa).toBeRejectedWithError('Los pagos con Mercado Pago no están configurados.');
   });
 });

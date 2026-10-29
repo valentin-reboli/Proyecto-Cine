@@ -42,13 +42,21 @@ test.describe('Compra de entradas', () => {
 
     // Paso 5: pago. Se crea la reserva en el backend (Mercado Pago no se prueba aca).
     await expect(page.getByRole('heading', { name: 'Pago' })).toBeVisible();
-    await expect(page.locator('.payment-method-btn')).toHaveCount(2);
+    await expect(page.locator('.payment-method-btn')).toHaveCount(1);
+    await expect(page.locator('.payment-method-btn')).toContainText('Mercado Pago');
+
+    // El link de pago lo da Mercado Pago (no hay credenciales en el entorno de test): se simula la respuesta
+    // y se comprueba que el comprador es enviado a ese link.
+    await page.route('**/api/reservas/*/pago/preferencia', (route) =>
+      route.fulfill({ status: 201, json: { id: 'pref-e2e', url: 'http://localhost:4200/?checkout-pro-e2e=1' } }),
+    );
 
     const reserva = page.waitForResponse((r) => r.url().endsWith('/api/reservas') && r.request().method() === 'POST');
-    await page.getByRole('button', { name: /Pagar con tarjeta/ }).click();
+    await page.getByRole('button', { name: /Pagar con Mercado Pago/ }).click();
     const res = await reserva;
     expect(res.status()).toBe(201);
     const { id } = await res.json();
+    await page.waitForURL(/checkout-pro-e2e=1/);
 
     // La reserva quedo guardada y se puede consultar con el correo del comprador.
     const consulta = await request.get(`${API}/reservas/${id}`, {
