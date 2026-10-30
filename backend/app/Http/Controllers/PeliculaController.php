@@ -37,26 +37,6 @@ class PeliculaController extends Controller
         return $query->orderBy('titulo')->get();
     }
 
-    #[OA\Get(
-        path: '/api/peliculas/{pelicula}',
-        summary: 'Detalle de una pelicula',
-        description: 'Devuelve una pelicula con su genero y sus funciones no canceladas.',
-        tags: ['Peliculas'],
-        parameters: [
-            new OA\Parameter(name: 'pelicula', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Pelicula encontrada.'),
-            new OA\Response(response: 404, description: 'Pelicula no encontrada.'),
-        ]
-    )]
-    public function show(Pelicula $pelicula)
-    {
-        return $pelicula->load(['genero', 'funciones' => function ($query) {
-            $query->where('cancelada', false)->orderBy('fecha_hora');
-        }, 'funciones.sala', 'funciones.formato']);
-    }
-
     // A partir de aca, gestion de admin (auth:sanctum, ver routes/api.php)
     #[OA\Post(
         path: '/api/peliculas',

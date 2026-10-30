@@ -13,7 +13,6 @@ class Reserva extends Model
     public const MINUTOS_BLOQUEO = 8;
 
     protected $fillable = [
-        'user_id',
         'funcion_id',
         'invitado_nombre',
         'invitado_correo',
@@ -35,11 +34,6 @@ class Reserva extends Model
         'usada_en' => 'datetime',
         'comprobante_enviado_en' => 'datetime',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function funcion()
     {

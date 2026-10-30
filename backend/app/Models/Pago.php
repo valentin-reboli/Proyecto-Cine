@@ -15,7 +15,6 @@ class Pago extends Model
         'metodo',
         'estado',
         'detalle',
-        'comprobante',
         'monto',
         'pagado_en',
     ];

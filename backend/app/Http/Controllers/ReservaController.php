@@ -17,32 +17,6 @@ use OpenApi\Attributes as OA;
 
 class ReservaController extends Controller
 {
-    // El cliente compra sin loguearse: se identifica por su correo.
-    #[OA\Get(
-        path: '/api/reservas',
-        summary: 'Reservas de un cliente',
-        description: 'Lista las reservas asociadas a un correo (el cliente no tiene cuenta, se identifica por correo).',
-        tags: ['Reservas'],
-        parameters: [
-            new OA\Parameter(name: 'correo', in: 'query', required: true, schema: new OA\Schema(type: 'string', format: 'email'), example: 'ana@x.com'),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Reservas del cliente.'),
-            new OA\Response(response: 422, description: 'Correo faltante o invalido.'),
-        ]
-    )]
-    public function index(Request $request)
-    {
-        $data = $request->validate([
-            'correo' => ['required', 'email'],
-        ]);
-
-        return Reserva::where('invitado_correo', $data['correo'])
-            ->with(['funcion.pelicula', 'reservaAsientos.asiento'])
-            ->latest()
-            ->get();
-    }
-
     #[OA\Post(
         path: '/api/reservas/bloquear',
         summary: 'Bloquear butacas',
@@ -354,33 +328,6 @@ class ReservaController extends Controller
         );
     }
 
-    // Listado completo para el admin (a diferencia de index(), no filtra por
-    // correo). Filtro opcional por estado para separar pendientes/pagadas/etc.
-    #[OA\Get(
-        path: '/api/admin/reservas',
-        summary: 'Listado de reservas (admin)',
-        description: 'Todas las reservas, sin filtrar por correo. Filtro opcional por estado.',
-        tags: ['Reservas'],
-        security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(name: 'estado', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['pendiente', 'pagada', 'expirada'])),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Listado de reservas.'),
-            new OA\Response(response: 401, description: 'No autenticado.'),
-        ]
-    )]
-    public function admin(Request $request)
-    {
-        $query = Reserva::query()->with(['funcion.pelicula', 'reservaAsientos.asiento']);
-
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->string('estado'));
-        }
-
-        return $query->latest()->get();
-    }
-
     #[OA\Get(
         path: '/api/reservas/{reserva}',
         summary: 'Detalle de una reserva',
@@ -405,51 +352,6 @@ class ReservaController extends Controller
         abort_unless($this->correoValido($reserva, $data['correo']), 403);
 
         return $reserva->load(['funcion.pelicula', 'reservaAsientos.asiento', 'pagos', 'descuentoGenerado', 'combos']);
-    }
-
-    // Cancelacion manual: la dispara el timer del front cuando se vence el
-    // tiempo para pagar, asi las butacas quedan libres al instante en vez de
-    // esperar a que pase el cron reservas:liberar-vencidas.
-    #[OA\Post(
-        path: '/api/reservas/{reserva}/cancelar',
-        summary: 'Cancelar una reserva pendiente',
-        description: 'Libera las butacas al instante en vez de esperar a que venza. Solo con el correo de la reserva.',
-        tags: ['Reservas'],
-        parameters: [
-            new OA\Parameter(name: 'reserva', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['correo'],
-                properties: [
-                    new OA\Property(property: 'correo', type: 'string', format: 'email', example: 'ana@x.com'),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 204, description: 'Reserva cancelada, butacas liberadas.'),
-            new OA\Response(response: 403, description: 'El correo no coincide con el de la reserva.'),
-            new OA\Response(response: 422, description: 'La reserva no esta pendiente.'),
-        ]
-    )]
-    public function cancelar(Request $request, Reserva $reserva)
-    {
-        $data = $request->validate([
-            'correo' => ['required', 'email'],
-        ]);
-
-        abort_unless($this->correoValido($reserva, $data['correo']), 403);
-
-        if ($reserva->estado !== 'pendiente') {
-            return response()->json([
-                'message' => 'La reserva no esta pendiente (estado actual: '.$reserva->estado.').',
-            ], 422);
-        }
-
-        $this->liberarButacas($reserva);
-
-        return response()->json(null, 204);
     }
 
     private function validarButacas(Funcion $funcion, $asientos)

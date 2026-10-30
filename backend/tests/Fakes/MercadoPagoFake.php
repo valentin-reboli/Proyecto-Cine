@@ -7,7 +7,7 @@ use App\Services\MercadoPagoService;
 use RuntimeException;
 
 // Mercado Pago simulado para los tests: nunca se llama a la API real.
-// Como en el sandbox, el resultado lo decide el token: APRO aprueba, CONT queda pendiente y OTHE rechaza.
+// Los pagos se cargan con agregarPago() (lo que el comprador haria en Checkout Pro).
 class MercadoPagoFake extends MercadoPagoService
 {
     public array $pagos = [];
@@ -23,22 +23,6 @@ class MercadoPagoFake extends MercadoPagoService
         return true;
     }
 
-    public function cobrarConTarjeta(Reserva $reserva, array $tarjeta): array
-    {
-        if ($tarjeta['token'] === 'ERROR') {
-            throw new RuntimeException('Mercado Pago respondio 400: 2034 Invalid users involved');
-        }
-
-        [$status, $detalle] = match ($tarjeta['token']) {
-            'APRO' => ['approved', 'accredited'],
-            'CONT' => ['in_process', 'pending_contingency'],
-            'FUND' => ['rejected', 'cc_rejected_insufficient_amount'],
-            default => ['rejected', 'cc_rejected_other_reason'],
-        };
-
-        return $this->agregarPago($reserva->id, $this->montoACobrar($reserva), $status, $detalle, $tarjeta['payment_method_id']);
-    }
-
     public function crearPreferencia(Reserva $reserva, string $urlRetorno): array
     {
         $this->preferencias[] = ['reserva_id' => $reserva->id, 'monto' => $this->montoACobrar($reserva), 'url_retorno' => $urlRetorno];
@@ -48,6 +32,10 @@ class MercadoPagoFake extends MercadoPagoService
 
     public function obtenerPago(string $id): array
     {
+        if (! isset($this->pagos[$id])) {
+            throw new RuntimeException('Mercado Pago respondio 404: Payment not found');
+        }
+
         return $this->pagos[$id];
     }
 

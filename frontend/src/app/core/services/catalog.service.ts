@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { CatalogApiService } from './catalog-api.service';
-import { LANG_LABELS, PRICE_GENERAL, PRICE_REDUCIDA, PROMOTIONS } from '../data/catalog.data';
+import { LANG_LABELS, PROMOTIONS } from '../data/catalog.data';
 import { ComingSoonMovie, Lang, Movie, Promotion } from '../models/movie.model';
 
 @Injectable({ providedIn: 'root' })
@@ -13,9 +13,6 @@ export class CatalogService {
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly promotions: Promotion[] = PROMOTIONS;
-
-  readonly priceGeneral = PRICE_GENERAL;
-  readonly priceReducida = PRICE_REDUCIDA;
 
   constructor() {
     this.load();
@@ -38,10 +35,6 @@ export class CatalogService {
       next: (movies) => this.comingSoon.set(movies),
       error: () => this.error.set(true),
     });
-  }
-
-  getMovieById(id: string): Movie | undefined {
-    return this.movies().find((m) => m.id === id);
   }
 
   langLabel(lang: Lang): string {

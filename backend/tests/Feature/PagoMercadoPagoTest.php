@@ -56,24 +56,11 @@ class PagoMercadoPagoTest extends TestCase
             ->firstWhere('id', Asiento::first()->id)['estado'];
     }
 
-    public function test_sin_token_de_tarjeta_no_se_confirma_nada(): void
-    {
-        $reservaId = $this->reservar();
-
-        // Lo que hacia antes el front: confirmar con cualquier dato.
-        $this->postJson("/api/reservas/{$reservaId}/pago", ['correo' => 'ana@test.com', 'metodo' => 'tarjeta'])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['token', 'payment_method_id', 'installments']);
-
-        $this->assertSame('pendiente', Reserva::find($reservaId)->estado);
-        $this->assertSame('temporal', $this->estadoButaca());
-    }
-
     public function test_pago_aprobado_ocupa_las_butacas_y_cobra_el_total_de_la_reserva(): void
     {
         $reservaId = $this->reservar();
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())
+        $this->pagar($reservaId)
             ->assertCreated()
             ->assertJsonPath('estado', 'aprobado')
             ->assertJsonPath('reserva.estado', 'pagada');
@@ -86,7 +73,7 @@ class PagoMercadoPagoTest extends TestCase
     {
         $reservaId = $this->reservar();
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'FUND'))
+        $this->pagar($reservaId, 'rejected', 'cc_rejected_insufficient_amount')
             ->assertStatus(402)
             ->assertJsonPath('message', 'La tarjeta no tiene fondos suficientes.');
 
@@ -94,7 +81,7 @@ class PagoMercadoPagoTest extends TestCase
         $this->assertSame('temporal', $this->estadoButaca());
 
         // Reintenta con otra tarjeta mientras dura el bloqueo.
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())->assertCreated();
+        $this->pagar($reservaId)->assertCreated();
         $this->assertSame('ocupado', $this->estadoButaca());
     }
 
@@ -102,7 +89,7 @@ class PagoMercadoPagoTest extends TestCase
     {
         $reservaId = $this->reservar();
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'CONT'))->assertStatus(202);
+        $this->pagar($reservaId, 'in_process', 'pending_contingency')->assertStatus(202);
         $this->assertSame('pendiente', Reserva::find($reservaId)->estado);
 
         // Mercado Pago lo acredita y avisa por webhook (formato ?type=payment&data.id=...).
@@ -122,7 +109,7 @@ class PagoMercadoPagoTest extends TestCase
     public function test_si_el_pago_se_aprueba_despues_de_vencer_el_bloqueo_se_reembolsa(): void
     {
         $reservaId = $this->reservar();
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'CONT'))->assertStatus(202);
+        $this->pagar($reservaId, 'in_process', 'pending_contingency')->assertStatus(202);
 
         $this->travel(9)->minutes();
         $this->mercadoPago->pagos['1000']['status'] = 'approved';
@@ -139,8 +126,8 @@ class PagoMercadoPagoTest extends TestCase
         $reservaId = $this->reservar();
         $this->travel(9)->minutes();
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())->assertStatus(410);
-        $this->assertSame([], $this->mercadoPago->pagos);
+        $this->postJson("/api/reservas/{$reservaId}/pago/preferencia", ['correo' => 'ana@test.com'])->assertStatus(410);
+        $this->assertSame([], $this->mercadoPago->preferencias);
     }
 
     public function test_checkout_pro_crea_la_preferencia_y_verifica_el_pago_con_mercado_pago(): void
@@ -177,7 +164,7 @@ class PagoMercadoPagoTest extends TestCase
     public function test_un_segundo_pago_aprobado_de_la_misma_reserva_se_reembolsa(): void
     {
         $reservaId = $this->reservar();
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())->assertCreated();
+        $this->pagar($reservaId)->assertCreated();
 
         $duplicado = $this->mercadoPago->agregarPago($reservaId, 1000);
         $this->postJson("/api/pagos/mercadopago/webhook?type=payment&data.id={$duplicado['id']}")->assertOk();
@@ -244,11 +231,11 @@ class PagoMercadoPagoTest extends TestCase
         $this->assertSame('pagada', Reserva::find($reservaId)->estado);
     }
 
-    public function test_config_expone_solo_la_clave_publica(): void
+    public function test_config_solo_dice_si_es_modo_prueba(): void
     {
-        config(['services.mercadopago.public_key' => 'TEST-publica', 'services.mercadopago.access_token' => 'TEST-secreto']);
+        config(['services.mercadopago.access_token' => 'TEST-secreto', 'services.mercadopago.modo_prueba' => true]);
 
-        $respuesta = $this->getJson('/api/pagos/config')->assertOk()->assertJsonPath('public_key', 'TEST-publica');
+        $respuesta = $this->getJson('/api/pagos/config')->assertOk()->assertExactJson(['modo_prueba' => true]);
         $this->assertStringNotContainsString('TEST-secreto', $respuesta->getContent());
     }
 
@@ -256,12 +243,14 @@ class PagoMercadoPagoTest extends TestCase
     {
         $reservaId = $this->reservar();
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'ERROR'))
+        $verificar = fn () => $this->postJson("/api/reservas/{$reservaId}/pago/verificar", ['correo' => 'ana@test.com', 'pago_id' => '999999']);
+
+        $verificar()
             ->assertStatus(503)
-            ->assertJsonPath('message', 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo. (Mercado Pago respondio 400: 2034 Invalid users involved)');
+            ->assertJsonPath('message', 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo. (Mercado Pago respondio 404: Payment not found)');
 
         config(['services.mercadopago.modo_prueba' => false]);
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta(token: 'ERROR'))
+        $verificar()
             ->assertStatus(503)
             ->assertJsonPath('message', 'No pudimos procesar el pago con Mercado Pago. Revisá los datos e intentá de nuevo.');
 

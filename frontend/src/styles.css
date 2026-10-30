@@ -69,26 +69,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-transform:
 button { font-family: var(--font-body); }
 
 @keyframes ccFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes ccShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-
-.cc-shimmer {
-  background: linear-gradient(100deg, var(--surface) 40%, #212127 50%, var(--surface) 60%);
-  background-size: 200% 100%;
-  animation: ccShimmer 1.6s ease-in-out infinite;
-  position: relative;
-}
-.cc-shimmer::after {
-  content: attr(data-placeholder);
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 12px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
 
 /* Page-level layout: header, hero, sections, footer */
 
@@ -852,49 +832,6 @@ button { font-family: var(--font-body); }
   font-weight: 600;
 }
 
-.ticket-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.ticket-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
-  flex-wrap: wrap;
-}
-.ticket-seat-id {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 110px;
-}
-.ticket-seat-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--bg);
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ticket-seat-id span:last-child {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-.ticket-options {
-  display: flex;
-  gap: 8px;
-}
 .ticket-type-btn {
   border: 1px solid var(--border-strong);
   background: transparent;
@@ -985,19 +922,6 @@ button { font-family: var(--font-body); }
   border-color: var(--accent);
   outline: none;
 }
-.card-form-row {
-  display: flex;
-  gap: 14px;
-}
-.card-form-row label {
-  flex: 1;
-}
-
-.mp-note {
-  color: var(--text-secondary);
-  font-size: 14px;
-  max-width: 420px;
-}
 
 .secure-note {
   display: flex;
@@ -1006,13 +930,6 @@ button { font-family: var(--font-body); }
   margin-top: 28px;
   color: var(--text-muted);
   font-size: 12px;
-}
-.checkbox-icon {
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--text-muted);
-  border-radius: var(--radius-sm);
-  display: inline-block;
 }
 
 .confirmation-step {

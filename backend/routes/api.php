@@ -31,9 +31,6 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 // Catálogo público (cartelera, próximamente y funciones de cada película)
 Route::get('/peliculas', [PeliculaController::class, 'index']);
 Route::get('/peliculas/inactivas', [PeliculaController::class, 'inactivas'])->middleware('auth:sanctum');
-Route::get('/peliculas/{pelicula}', [PeliculaController::class, 'show']);
-Route::get('/funciones', [FuncionController::class, 'index']);
-Route::get('/funciones/{funcion}', [FuncionController::class, 'show']);
 Route::get('/funciones/{funcion}/asientos', [FuncionController::class, 'asientos']);
 Route::get('/generos', [GeneroController::class, 'index']);
 Route::get('/salas', [SalaController::class, 'index']);
@@ -42,17 +39,14 @@ Route::get('/combos', [ComboController::class, 'index']);
 Route::get('/entradas/qr/{codigo}.png', [QrController::class, 'show']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
-Route::get('/reservas', [ReservaController::class, 'index']);
 Route::post('/descuentos/validar', [DescuentoController::class, 'validar'])->middleware('throttle:20,1');
 Route::post('/reservas/bloquear', [ReservaController::class, 'bloquear'])->middleware('throttle:30,1');
 Route::post('/reservas', [ReservaController::class, 'store']);
 Route::get('/reservas/{reserva}', [ReservaController::class, 'show']);
-Route::post('/reservas/{reserva}/cancelar', [ReservaController::class, 'cancelar']);
 Route::post('/reservas/{reserva}/liberar', [ReservaController::class, 'liberar']);
 
 // Pagos con Mercado Pago (el estado del pago se consulta siempre a Mercado Pago)
 Route::get('/pagos/config', [PagoController::class, 'config']);
-Route::post('/reservas/{reserva}/pago', [PagoController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/reservas/{reserva}/pago/preferencia', [PagoController::class, 'preferencia'])->middleware('throttle:10,1');
 Route::post('/reservas/{reserva}/pago/verificar', [PagoController::class, 'verificar'])->middleware('throttle:20,1');
 Route::post('/pagos/mercadopago/webhook', [PagoController::class, 'webhook']);
@@ -78,10 +72,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/funciones', [FuncionController::class, 'store']);
     Route::put('/funciones/{funcion}', [FuncionController::class, 'update']);
     Route::post('/funciones/{funcion}/cancelar', [FuncionController::class, 'cancelar']);
-
-    Route::post('/generos', [GeneroController::class, 'store']);
-
-    Route::get('/admin/reservas', [ReservaController::class, 'admin']);
 
     Route::post('/entradas/validar', [EntradaController::class, 'validar']);
     Route::get('/admin/combos', [ComboController::class, 'admin']);

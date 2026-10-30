@@ -6,17 +6,13 @@ const JSON_HEADERS = { Accept: 'application/json' };
 // (namespace, nombre de clase o metodo) estas llamadas lo detectan.
 test.describe('API', () => {
   test('endpoints publicos responden 200', async ({ request }) => {
+    // La cartelera trae cada pelicula con sus funciones.
     const peliculas = await (await request.get(`${API}/peliculas`)).json();
-    const funciones = await (await request.get(`${API}/funciones`)).json();
-    const pelicula = peliculas[0];
-    const funcion = funciones[0];
+    const funcion = peliculas.find((p: { funciones: unknown[] }) => p.funciones.length > 0).funciones[0];
 
     for (const path of [
       '/estado',
       '/peliculas',
-      `/peliculas/${pelicula.id}`,
-      '/funciones',
-      `/funciones/${funcion.id}`,
       `/funciones/${funcion.id}/asientos`,
       '/generos',
       '/salas',
@@ -34,7 +30,6 @@ test.describe('API', () => {
       '/user',
       '/peliculas/inactivas',
       '/admin/funciones',
-      '/admin/reservas',
       '/admin/combos',
       '/usuarios',
     ];
@@ -58,7 +53,10 @@ test.describe('API', () => {
 
     expect(spec.info.title).toBe('Cine Concordia API');
     expect(spec.components.securitySchemes.sanctum).toBeTruthy();
-    expect(Object.keys(spec.paths)).not.toContain('/api/campanias');
+    // Lo que se saco ya no aparece en la documentacion.
+    for (const quitado of ['/api/campanias', '/api/reservas/{reserva}/pago', '/api/reservas/{reserva}/cancelar', '/api/admin/reservas']) {
+      expect(Object.keys(spec.paths)).not.toContain(quitado);
+    }
     for (const path of [
       '/api/login',
       '/api/peliculas',

@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Asiento;
 use App\Models\Sala;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class AsientoSeeder extends Seeder

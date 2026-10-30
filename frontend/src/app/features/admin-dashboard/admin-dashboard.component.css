@@ -207,19 +207,6 @@
   cursor: wait;
 }
 
-.admin-btn-danger {
-  background: transparent;
-  border: none;
-  color: var(--accent-light);
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-}
-
-.admin-btn-danger:hover {
-  color: var(--accent);
-}
-
 /* Papelera */
 .admin-papelera-toggle {
   background: transparent;

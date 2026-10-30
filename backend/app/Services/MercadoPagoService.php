@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Reserva;
 use App\Models\ReservaAsiento;
-use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\Client\Payment\PaymentRefundClient;
 use MercadoPago\Client\Preference\PreferenceClient;
@@ -20,35 +19,7 @@ class MercadoPagoService
 {
     public function configurado(): bool
     {
-        return (bool) config('services.mercadopago.access_token') && (bool) config('services.mercadopago.public_key');
-    }
-
-    // Cobra con la tarjeta tokenizada por el Card Payment Brick del front.
-    // El monto sale de la reserva (no del front) y la reserva va en external_reference.
-    public function cobrarConTarjeta(Reserva $reserva, array $tarjeta): array
-    {
-        $this->configurar();
-
-        $opciones = new RequestOptions;
-        // Si el request se repite (doble click, reintento de red) Mercado Pago no cobra dos veces.
-        $opciones->setCustomHeaders(['X-Idempotency-Key: reserva-'.$reserva->id.'-'.$tarjeta['token']]);
-
-        $pago = $this->llamar(fn () => (new PaymentClient)->create(array_filter([
-            'transaction_amount' => $this->montoACobrar($reserva),
-            'token' => $tarjeta['token'],
-            'description' => 'Cine Concordia - Reserva Nº '.$reserva->id,
-            'installments' => (int) $tarjeta['installments'],
-            'payment_method_id' => $tarjeta['payment_method_id'],
-            'issuer_id' => $tarjeta['issuer_id'] ?? null,
-            'external_reference' => (string) $reserva->id,
-            'notification_url' => $this->urlWebhook(),
-            'payer' => array_filter([
-                'email' => $this->correoComprador($tarjeta['payer']['email'] ?? $reserva->invitado_correo),
-                'identification' => $tarjeta['payer']['identification'] ?? null,
-            ]),
-        ], fn ($valor) => $valor !== null), $opciones));
-
-        return $this->normalizar($pago);
+        return (bool) config('services.mercadopago.access_token');
     }
 
     // Arma una preferencia de Checkout Pro para pagar con la cuenta de Mercado Pago.
@@ -99,13 +70,6 @@ class MercadoPagoService
         $this->configurar();
 
         $this->llamar(fn () => (new PaymentRefundClient)->refundTotal((int) $id));
-    }
-
-    // Con credenciales de prueba Mercado Pago rechaza pagos de correos de cuentas reales
-    // (o del propio vendedor): se usa el correo de comprador de prueba que indica su documentacion.
-    private function correoComprador(string $correo): string
-    {
-        return config('services.mercadopago.modo_prueba') ? 'test@testuser.com' : $correo;
     }
 
     private function configurar(): void

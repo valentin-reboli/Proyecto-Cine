@@ -47,16 +47,6 @@ class ReservaAsiento extends Model
         return [$vencidas->count(), $reservaIds->count()];
     }
 
-    public function reserva()
-    {
-        return $this->belongsTo(Reserva::class);
-    }
-
-    public function funcion()
-    {
-        return $this->belongsTo(Funcion::class);
-    }
-
     public function asiento()
     {
         return $this->belongsTo(Asiento::class);

@@ -22,10 +22,10 @@ describe('MercadoPagoService', () => {
     const primera = service.config();
     const segunda = service.config();
 
-    http.expectOne(`${API_URL}/pagos/config`).flush({ habilitado: true, public_key: 'TEST-123', modo_prueba: true });
+    http.expectOne(`${API_URL}/pagos/config`).flush({ modo_prueba: true });
 
-    expect((await primera).public_key).toBe('TEST-123');
-    expect((await segunda).modo_prueba).toBeTrue();
+    expect((await primera).modo_prueba).toBeTrue();
+    expect(await segunda).toBe(await primera);
   });
 
   it('crea la preferencia de Checkout Pro y devuelve el link de pago', () => {

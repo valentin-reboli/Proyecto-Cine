@@ -70,6 +70,7 @@ class EstructuraTest extends TestCase
 
         $this->getJson('/api/peliculas')->assertOk()->assertJsonFragment(['titulo' => 'Casablanca']);
         $this->getJson('/api/salas')->assertOk();
-        $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
+        // El seeder ya no crea el usuario de prueba test@example.com.
+        $this->assertDatabaseMissing('users', ['email' => 'test@example.com']);
     }
 }

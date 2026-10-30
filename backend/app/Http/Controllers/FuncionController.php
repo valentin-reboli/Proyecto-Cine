@@ -10,48 +10,6 @@ use OpenApi\Attributes as OA;
 
 class FuncionController extends Controller
 {
-    #[OA\Get(
-        path: '/api/funciones',
-        summary: 'Listar funciones',
-        description: 'Funciones no canceladas, opcionalmente filtradas por pelicula.',
-        tags: ['Funciones'],
-        parameters: [
-            new OA\Parameter(name: 'pelicula_id', in: 'query', required: false, schema: new OA\Schema(type: 'integer')),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Listado de funciones.'),
-        ]
-    )]
-    public function index(Request $request)
-    {
-        $query = Funcion::query()
-            ->with(['pelicula', 'sala', 'formato'])
-            ->where('cancelada', false);
-
-        if ($request->filled('pelicula_id')) {
-            $query->where('pelicula_id', $request->integer('pelicula_id'));
-        }
-
-        return $query->orderBy('fecha_hora')->get();
-    }
-
-    #[OA\Get(
-        path: '/api/funciones/{funcion}',
-        summary: 'Detalle de una funcion',
-        tags: ['Funciones'],
-        parameters: [
-            new OA\Parameter(name: 'funcion', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        responses: [
-            new OA\Response(response: 200, description: 'Funcion encontrada.'),
-            new OA\Response(response: 404, description: 'Funcion no encontrada.'),
-        ]
-    )]
-    public function show(Funcion $funcion)
-    {
-        return $funcion->load(['pelicula', 'sala.asientos', 'formato']);
-    }
-
     // Mapa de butacas de la funcion con su estado real (disponible/temporal/ocupado).
     // Una butaca "temporal" vencida (expira_en ya paso) cuenta como disponible,
     // aunque el cron reservas:liberar-vencidas todavia no haya pasado a liberarla.

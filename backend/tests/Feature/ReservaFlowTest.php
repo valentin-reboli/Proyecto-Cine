@@ -88,7 +88,7 @@ class ReservaFlowTest extends TestCase
         $mapa->assertOk();
         $this->assertSame('temporal', collect($mapa->json())->firstWhere('id', $asiento->id)['estado']);
 
-        $pagoResponse = $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta());
+        $pagoResponse = $this->pagar($reservaId);
 
         $pagoResponse->assertCreated();
 
@@ -117,34 +117,6 @@ class ReservaFlowTest extends TestCase
         ]);
 
         $segunda->assertStatus(409);
-    }
-
-    public function test_cancelar_libera_la_butaca_al_instante(): void
-    {
-        $funcion = $this->crearFuncion();
-        $asiento = Asiento::where('sala_id', $funcion->sala_id)->first();
-
-        $reserva = $this->postJson('/api/reservas', [
-            'funcion_id' => $funcion->id,
-            'asientos' => [$asiento->id],
-            'invitado_nombre' => 'Ana',
-            'invitado_correo' => 'ana@test.com',
-        ])->json();
-
-        $this->postJson("/api/reservas/{$reserva['id']}/cancelar", [
-            'correo' => 'ana@test.com',
-        ])->assertNoContent();
-
-        $mapa = $this->getJson("/api/funciones/{$funcion->id}/asientos");
-        $this->assertSame('disponible', collect($mapa->json())->firstWhere('id', $asiento->id)['estado']);
-
-        $otra = $this->postJson('/api/reservas', [
-            'funcion_id' => $funcion->id,
-            'asientos' => [$asiento->id],
-            'invitado_nombre' => 'Beto',
-            'invitado_correo' => 'beto@test.com',
-        ]);
-        $otra->assertCreated();
     }
 
     public function test_crear_sala_genera_butacas_y_una_butaca_bloqueada_no_se_vende(): void
@@ -186,7 +158,7 @@ class ReservaFlowTest extends TestCase
             'invitado_correo' => 'ana@test.com',
         ])->json('id');
 
-        $pago = $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())
+        $pago = $this->pagar($reservaId)
             ->assertCreated();
 
         $codigo = $pago->json('reserva.codigo_qr');
@@ -215,7 +187,7 @@ class ReservaFlowTest extends TestCase
             'invitado_correo' => 'ana@test.com',
         ])->json('id');
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())
+        $this->pagar($reservaId)
             ->assertCreated()
             ->assertJsonPath('reserva.estado', 'pagada')
             ->assertJsonPath('reserva.comprobante_enviado_en', null);
@@ -230,7 +202,7 @@ class ReservaFlowTest extends TestCase
             'funcion_id' => $funcion->id, 'asientos' => [$asientos[0]->id],
             'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
         ])->json('id');
-        $this->postJson("/api/reservas/{$r1}/pago", $this->tarjeta())->assertCreated();
+        $this->pagar($r1)->assertCreated();
 
         $regalo = $this->getJson("/api/reservas/{$r1}?correo=ana@test.com")->json('descuento_generado');
         $this->assertSame(10, $regalo['porcentaje']);
@@ -256,8 +228,9 @@ class ReservaFlowTest extends TestCase
             'codigo_descuento' => $regalo['codigo'],
         ])->assertCreated()->json('id');
 
-        $this->postJson("/api/reservas/{$r2}/pago", $this->tarjeta())->assertCreated();
-        $this->postJson("/api/reservas/{$r3}/pago", $this->tarjeta())->assertUnprocessable();
+        $this->pagar($r2)->assertCreated();
+        // La otra ya no puede ir a pagar: el codigo quedo usado.
+        $this->postJson("/api/reservas/{$r3}/pago/preferencia", ['correo' => 'ana@test.com'])->assertUnprocessable();
 
         $this->postJson('/api/descuentos/validar', ['codigo' => $regalo['codigo'], 'correo' => 'ana@test.com'])
             ->assertUnprocessable()->assertJsonPath('message', 'Ese código ya fue usado.');
@@ -325,9 +298,6 @@ class ReservaFlowTest extends TestCase
             'invitado_nombre' => 'Beto', 'invitado_correo' => 'beto@test.com',
         ])->assertStatus(409);
 
-        // El token no se expone en otros listados
-        $this->assertArrayNotHasKey('token_bloqueo', $this->getJson("/api/reservas?correo=ana@test.com")->json()[0] ?? []);
-
         // Quien la bloqueo completa sus datos y paga: queda ocupada
         $reserva = $this->postJson('/api/reservas', [
             'funcion_id' => $funcion->id, 'asientos' => [$asiento->id],
@@ -337,7 +307,7 @@ class ReservaFlowTest extends TestCase
         $this->assertSame($bloqueo['id'], $reserva->json('id'));
         $this->assertArrayNotHasKey('token_bloqueo', $reserva->json());
 
-        $this->postJson("/api/reservas/{$bloqueo['id']}/pago", $this->tarjeta())
+        $this->pagar($bloqueo['id'])
             ->assertCreated();
 
         // Comprada: sigue ocupada aunque pasen los 8 minutos
@@ -385,7 +355,8 @@ class ReservaFlowTest extends TestCase
 
         $this->travel(9)->minutes();
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())
+        // Ya no se puede ir a pagar: el tiempo se termino y las butacas se liberaron.
+        $this->postJson("/api/reservas/{$reservaId}/pago/preferencia", ['correo' => 'ana@test.com'])
             ->assertStatus(410);
         $this->assertSame('disponible', $this->estadoDe($funcion, $asiento));
     }
@@ -400,8 +371,9 @@ class ReservaFlowTest extends TestCase
             'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
         ])->assertCreated()->json('id');
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())->assertCreated();
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())->assertUnprocessable();
+        $this->pagar($reservaId)->assertCreated();
+        // Ya pagada: no se puede volver a pagar.
+        $this->postJson("/api/reservas/{$reservaId}/pago/preferencia", ['correo' => 'ana@test.com'])->assertUnprocessable();
 
         $this->assertDatabaseCount('pagos', 1);
         $this->assertSame('ocupado', $this->estadoDe($funcion, $asiento));
@@ -478,7 +450,7 @@ class ReservaFlowTest extends TestCase
             'invitado_nombre' => 'Ana', 'invitado_correo' => 'ana@test.com',
             'bloqueo_id' => $bloqueo['id'], 'bloqueo_token' => $bloqueo['token'],
         ])->assertCreated();
-        $this->postJson("/api/reservas/{$bloqueo['id']}/pago", $this->tarjeta())
+        $this->pagar($bloqueo['id'])
             ->assertCreated();
 
         $this->assertSame('ocupado', $this->estadoDe($funcion, $asiento));

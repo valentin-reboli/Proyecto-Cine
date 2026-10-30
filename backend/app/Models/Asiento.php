@@ -12,14 +12,4 @@ class Asiento extends Model
     protected $fillable = ['sala_id', 'fila', 'numero', 'activo'];
 
     protected $casts = ['activo' => 'boolean'];
-
-    public function sala()
-    {
-        return $this->belongsTo(Sala::class);
-    }
-
-    public function reservaAsientos()
-    {
-        return $this->hasMany(ReservaAsiento::class);
-    }
 }

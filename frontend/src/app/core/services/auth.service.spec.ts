@@ -32,7 +32,7 @@ describe('AuthService', () => {
     req.flush({ user: { id: 1, name: 'Jacobo', email: 'jacobo@cineconcordia.com' }, token: 'tok-1' });
 
     expect(service.isLoggedIn()).toBeTrue();
-    expect(service.getToken()).toBe('tok-1');
+    expect(localStorage.getItem('cc_admin_token')).toBe('tok-1');
   });
 
   it('el login con Google manda el credential y guarda la sesion', () => {
@@ -41,7 +41,7 @@ describe('AuthService', () => {
     expect(req.request.body).toEqual({ credential: 'jwt-de-google' });
     req.flush({ user: { id: 1, name: 'Jacobo', email: 'jacobo@cineconcordia.com' }, token: 'tok-2' });
 
-    expect(service.getToken()).toBe('tok-2');
+    expect(localStorage.getItem('cc_admin_token')).toBe('tok-2');
   });
 
   it('cerrar sesion borra el token y lleva al login, aunque falle la API', () => {
@@ -53,7 +53,7 @@ describe('AuthService', () => {
     service.logout();
     http.expectOne(`${API_URL}/logout`).flush(null, { status: 204, statusText: 'No Content' });
 
-    expect(service.getToken()).toBeNull();
+    expect(localStorage.getItem('cc_admin_token')).toBeNull();
     expect(service.isLoggedIn()).toBeFalse();
     expect(navegar).toHaveBeenCalledWith('/login');
 
@@ -61,7 +61,7 @@ describe('AuthService', () => {
     service.logout();
     http.expectOne(`${API_URL}/logout`).flush(null, { status: 401, statusText: 'Unauthorized' });
 
-    expect(service.getToken()).toBeNull();
+    expect(localStorage.getItem('cc_admin_token')).toBeNull();
     expect(navegar).toHaveBeenCalledTimes(2);
   });
 });
@@ -105,7 +105,7 @@ describe('AuthService: cierre por inactividad', () => {
 
     jasmine.clock().tick(2 * 60_000);
     expect(service.isLoggedIn()).toBeFalse();
-    expect(service.getToken()).toBeNull();
+    expect(localStorage.getItem('cc_admin_token')).toBeNull();
     expect(navegar).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'inactividad' } });
   });
 
@@ -131,6 +131,6 @@ describe('AuthService: cierre por inactividad', () => {
     const service = crearServicio();
 
     expect(service.isLoggedIn()).toBeFalse();
-    expect(service.getToken()).toBeNull();
+    expect(localStorage.getItem('cc_admin_token')).toBeNull();
   });
 });

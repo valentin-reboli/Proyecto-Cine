@@ -35,8 +35,6 @@
 .col-acciones button { margin-left: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
 .col-acciones .btn-link { border: 1px solid var(--border-strong); color: var(--text-primary); }
 .col-acciones .btn-link:hover { border-color: var(--accent); color: var(--accent); }
-.col-acciones .admin-btn-danger { border: 1px solid transparent; }
-.col-acciones .admin-btn-danger:hover { border-color: var(--accent); background: var(--accent-soft-12); }
 
 .admin-page .site-header .btn-back { white-space: nowrap; flex-shrink: 0; }
 

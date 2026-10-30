@@ -56,7 +56,7 @@ class EntradaValidacionTest extends TestCase
             'invitado_correo' => 'ana@test.com',
         ])->assertCreated()->json('id');
 
-        $this->postJson("/api/reservas/{$reservaId}/pago", $this->tarjeta())->assertCreated();
+        $this->pagar($reservaId)->assertCreated();
 
         return Reserva::findOrFail($reservaId);
     }

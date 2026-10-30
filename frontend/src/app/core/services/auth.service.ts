@@ -139,8 +139,4 @@ export class AuthService {
     }
     return Date.now() - ultima > INACTIVIDAD_MS;
   }
-
-  getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
-  }
 }

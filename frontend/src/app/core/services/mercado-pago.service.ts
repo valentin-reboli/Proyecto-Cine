@@ -10,8 +10,6 @@ export interface RespuestaPago {
 }
 
 export interface ConfigPagos {
-  habilitado: boolean;
-  public_key: string | null;
   modo_prueba: boolean;
 }
 

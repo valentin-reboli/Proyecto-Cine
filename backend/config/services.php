@@ -44,7 +44,6 @@ return [
         // Credenciales de la aplicacion de Mercado Pago (Tus integraciones > Credenciales de prueba).
         // Con las de prueba no se cobra dinero real. El access token es secreto: solo en el .env / Railway.
         'access_token' => env('MP_ACCESS_TOKEN'),
-        'public_key' => env('MP_PUBLIC_KEY'),
         // Clave secreta de las notificaciones (webhooks) para validar la firma x-signature.
         'webhook_secret' => env('MP_WEBHOOK_SECRET'),
         // Monto fijo (en pesos) que se le cobra a Mercado Pago por cada compra, sin importar el precio de las

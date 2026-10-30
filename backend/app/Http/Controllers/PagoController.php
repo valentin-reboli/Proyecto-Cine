@@ -23,78 +23,18 @@ class PagoController extends Controller
         private PagoService $pagos,
     ) {}
 
-    // Clave publica para el SDK de Mercado Pago del front (no es secreta).
+    // El front solo necesita saber si es modo prueba (para mostrar el aviso de tarjetas de prueba).
     #[OA\Get(
         path: '/api/pagos/config',
         summary: 'Configuracion publica de Mercado Pago',
         tags: ['Pagos'],
-        responses: [new OA\Response(response: 200, description: 'Clave publica, si los pagos estan habilitados y si es modo prueba.')]
+        responses: [new OA\Response(response: 200, description: 'Si los pagos estan en modo prueba.')]
     )]
     public function config()
     {
         return response()->json([
-            'habilitado' => $this->mercadoPago->configurado(),
-            'public_key' => config('services.mercadopago.public_key'),
             'modo_prueba' => (bool) config('services.mercadopago.modo_prueba'),
         ]);
-    }
-
-    // Cobra la reserva con la tarjeta que tokenizo el Card Payment Brick en el navegador.
-    // El monto lo pone el servidor (el total de la reserva) y el resultado lo informa Mercado Pago.
-    #[OA\Post(
-        path: '/api/reservas/{reserva}/pago',
-        summary: 'Pagar una reserva con tarjeta (Mercado Pago)',
-        description: 'Cobra el total de la reserva con el token de tarjeta generado por el SDK de Mercado Pago. Si Mercado Pago lo aprueba, las butacas pasan de temporal a ocupado y se genera el codigo QR. Solo con el correo de la reserva.',
-        tags: ['Pagos'],
-        parameters: [
-            new OA\Parameter(name: 'reserva', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['correo', 'token', 'payment_method_id', 'installments'],
-                properties: [
-                    new OA\Property(property: 'correo', type: 'string', format: 'email', example: 'ana@x.com'),
-                    new OA\Property(property: 'token', type: 'string', description: 'Token de la tarjeta (Card Payment Brick).'),
-                    new OA\Property(property: 'payment_method_id', type: 'string', example: 'visa'),
-                    new OA\Property(property: 'installments', type: 'integer', example: 1),
-                    new OA\Property(property: 'issuer_id', type: 'string', nullable: true),
-                    new OA\Property(property: 'payer', type: 'object', nullable: true),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 201, description: 'Pago aprobado, reserva pagada con codigo QR.'),
-            new OA\Response(response: 202, description: 'El pago quedo pendiente de revision en Mercado Pago.'),
-            new OA\Response(response: 402, description: 'Mercado Pago rechazo el pago.'),
-            new OA\Response(response: 403, description: 'El correo no coincide con el de la reserva.'),
-            new OA\Response(response: 410, description: 'La reserva vencio y sus butacas fueron liberadas.'),
-            new OA\Response(response: 422, description: 'La reserva no esta pendiente de pago.'),
-            new OA\Response(response: 503, description: 'Mercado Pago no esta configurado o no responde.'),
-        ]
-    )]
-    public function store(Request $request, Reserva $reserva)
-    {
-        $data = $request->validate([
-            'correo' => ['required', 'email'],
-            'token' => ['required', 'string', 'max:255'],
-            'payment_method_id' => ['required', 'string', 'max:50'],
-            'installments' => ['required', 'integer', 'min:1', 'max:36'],
-            'issuer_id' => ['nullable'],
-            'payer' => ['nullable', 'array'],
-            'payer.email' => ['nullable', 'email'],
-            'payer.identification.type' => ['nullable', 'string', 'max:20'],
-            'payer.identification.number' => ['nullable', 'string', 'max:30'],
-        ]);
-
-        $this->validarPagable($reserva, $data['correo']);
-
-        $pago = $this->conMercadoPago(fn () => $this->pagos->registrar(
-            $reserva,
-            $this->mercadoPago->cobrarConTarjeta($reserva, $data)
-        ));
-
-        return $this->respuesta($pago);
     }
 
     // Checkout Pro: arma la preferencia y devuelve el link de Mercado Pago al que se redirige al comprador.
