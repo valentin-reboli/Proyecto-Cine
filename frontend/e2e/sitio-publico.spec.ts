@@ -14,6 +14,25 @@ test.describe('Sitio publico', () => {
     await expect(page.getByText('2001: Odisea del Espacio').first()).toBeVisible();
   });
 
+  test('mientras carga la cartelera la pagina no salta', async ({ page }) => {
+    // API lenta, como en el servidor publicado: el hero tarda en aparecer.
+    await page.route('**/api/peliculas**', async (route) => {
+      await new Promise((r) => setTimeout(r, 2000));
+      await route.continue();
+    });
+    const posicionCartelera = () =>
+      page.evaluate(() => Math.round(document.querySelector('#cartelera')!.getBoundingClientRect().top + scrollY));
+
+    await page.goto('/');
+    await expect(page.locator('.hero-cargando')).toBeVisible();
+    const mientrasCarga = await posicionCartelera();
+
+    await expect(page.locator('.hero-title')).toBeVisible();
+    await expect(page.locator('.hero-cargando')).toHaveCount(0);
+    expect(await posicionCartelera()).toBe(mientrasCarga);
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+  });
+
   test('el buscador de la cartelera filtra por titulo', async ({ page }) => {
     await page.goto('/');
     await page.getByPlaceholder('Buscar película...').fill('Casab');

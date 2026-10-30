@@ -1,6 +1,8 @@
 /* Portada con rotacion */
 .hero-slide { opacity: 0; transition: opacity 0.9s ease; }
 .hero-slide.active { opacity: 1; }
+.hero-cargando { background: var(--surface); animation: hero-cargando 1.6s ease-in-out infinite; }
+@keyframes hero-cargando { 50% { background: var(--surface-alt); } }
 .hero-nav { display: flex; align-items: center; gap: 10px; margin-top: 28px; }
 .hero-arrow { background: transparent; border: 1px solid var(--border-strong); color: var(--text-primary); width: 34px; height: 34px; border-radius: 50%; font-size: 20px; line-height: 1; cursor: pointer; }
 .hero-arrow:hover { border-color: var(--accent); color: var(--accent-light); }

@@ -71,6 +71,12 @@
     }
   </div>
 </section>
+} @else if (loading()) {
+<!-- Mismo alto que el hero mientras carga la cartelera: asi la pagina no salta cuando aparece. -->
+<section class="hero hero-cargando" aria-busy="true" aria-label="Cargando película destacada">
+  <div class="hero-scrim-v"></div>
+  <div class="hero-scrim-h"></div>
+</section>
 }
 
 <section id="cartelera" class="section">
