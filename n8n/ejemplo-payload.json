@@ -1,0 +1,23 @@
+{
+  "evento": "compra_confirmada",
+  "reserva": { "id": 42, "codigo": "9b2f6c1e-3d4a-4f5b-8c7d-1a2b3c4d5e6f" },
+  "comprador": { "nombre": "Ana Pérez", "correo": "ana@example.com" },
+  "pelicula": "Casablanca",
+  "funcion": {
+    "fecha": "20/11/2026",
+    "hora": "21:30",
+    "fecha_hora": "2026-11-20T21:30:00",
+    "sala": "Sala 1",
+    "formato": "2D",
+    "idioma": "Subtitulada"
+  },
+  "butacas": ["F7", "F8"],
+  "combos": [{ "nombre": "Combo Pochoclo", "cantidad": 1, "precio_unitario": 6500 }],
+  "importes": { "entradas": 12000, "combos": 6500, "descuento": 1200, "total": 17300 },
+  "descuento_aplicado": { "codigo": "CINE-7KQ2MX", "porcentaje": 10, "monto": 1200 },
+  "descuento": { "codigo": "CINE-P4R8TZ", "porcentaje": 10, "vence": "20/12/2026" },
+  "pago": { "metodo": "account_money", "fecha": "05/11/2026 21:12" },
+  "qr_url": "https://cineconcordia.up.railway.app/api/entradas/qr/9b2f6c1e-3d4a-4f5b-8c7d-1a2b3c4d5e6f.png",
+  "comprobante_pdf_url": "https://cineconcordia.up.railway.app/api/entradas/comprobante/9b2f6c1e-3d4a-4f5b-8c7d-1a2b3c4d5e6f.pdf",
+  "mensaje": "Hola Ana Pérez! Tu compra en Cine Concordia está confirmada. ..."
+}

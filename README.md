@@ -99,10 +99,11 @@ Variables del servicio web (cargarlas en Railway → Variables; nunca commitear 
 | `GOOGLE_CLIENT_ID` | Client ID de Google (debe ser el mismo que usa el front en `environment.production.ts`). |
 | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `MP_MODO_PRUEBA` | Credenciales de Mercado Pago (Checkout Pro) y modo prueba (`true`/`false`). |
 | `MP_MONTO_COBRO` | Opcional. Monto fijo en pesos que se le cobra a Mercado Pago por compra (por ejemplo `0.10`), sin cambiar el precio que ve el cliente. Solo para probar cobros reales; **dejar vacío para cobrar el total**. |
-| `N8N_COMPRA_WEBHOOK` | Webhook de n8n que manda el comprobante, el QR y el código de descuento al comprador. |
+| `N8N_COMPRA_WEBHOOK` | Webhook de n8n que manda el correo de confirmación con el comprobante en PDF, el QR y el código de descuento al comprador. |
+| `N8N_WEBHOOK_TOKEN` | Token que el backend manda en el header `X-Cine-Token` y n8n valida (credencial *Header Auth*). |
 | `DESCUENTO_PORCENTAJE`, `DESCUENTO_VIGENCIA_DIAS` | Descuento que se regala en cada compra (por defecto 10 % y 30 días). Opcionales. |
 | `PORT` | Opcional; Railway lo define solo. |
 
-La variable de n8n es opcional: sin ella la compra se confirma igual, pero no se envía el comprobante.
+Las variables de n8n son opcionales: sin ellas la compra se confirma igual, pero no se envía el comprobante. Si n8n no responde, `comprobantes:reenviar` lo reintenta cada 10 minutos durante 24 horas. Cómo levantar n8n en Railway y configurar el correo: [n8n/README.md](n8n/README.md).
 
 Después de un deploy, verificar `/api/estado` (estado de la base) y `/docs` (Swagger).

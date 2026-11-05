@@ -1,0 +1,139 @@
+{
+  "name": "Cine Concordia - Correo de compra confirmada",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "compra-confirmada",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "compra-confirmada"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "evento",
+              "leftValue": "={{ $json.body.evento }}",
+              "rightValue": "compra_confirmada",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Es compra confirmada",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.comprobante_pdf_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "comprobante"
+            }
+          }
+        }
+      },
+      "name": "Descargar comprobante PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.comprador.correo }}",
+        "emailType": "html",
+        "subject": "=Tu entrada para {{ $('Webhook').item.json.body.pelicula }} - Reserva Nº {{ $('Webhook').item.json.body.reserva.id }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\">\n<h2 style=\"color:#b91c1c;margin-bottom:4px\">¡Tu compra está confirmada!</h2>\n<p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, gracias por comprar en Cine Concordia.</p>\n<table style=\"width:100%;border-collapse:collapse\">\n<tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha }} · {{ $('Webhook').item.json.body.funcion.hora }} hs</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala }} · {{ $('Webhook').item.json.body.funcion.formato }}</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>\n{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}\n{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}\n<tr><td style=\"color:#6b7280;padding:4px 0\">Total pagado</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr>\n</table>\n<p style=\"text-align:center;margin:20px 0\"><img src=\"{{ $('Webhook').item.json.body.qr_url }}\" width=\"200\" height=\"200\" alt=\"Código QR de tu entrada\"><br>Presentá este código QR en la entrada de la sala.</p>\n{{ $('Webhook').item.json.body.descuento ? '<div style=\"border:1px dashed #b91c1c;padding:12px;margin:16px 0\">🎁 <b>Tu regalo:</b> ' + $('Webhook').item.json.body.descuento.porcentaje + '% de descuento en tu próxima compra con el código <b style=\"font-size:16px\">' + $('Webhook').item.json.body.descuento.codigo + '</b>. Válido hasta el ' + $('Webhook').item.json.body.descuento.vence + '.</div>' : '' }}\n<p>Te adjuntamos el comprobante en PDF.</p>\n<p style=\"color:#6b7280;font-size:12px\">Pago de prueba con Mercado Pago: no se cobró dinero real.</p>\n</div>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Cine Concordia",
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "comprobante"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Enviar correo (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        -20
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Es compra confirmada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es compra confirmada": {
+      "main": [
+        [
+          {
+            "node": "Descargar comprobante PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Descargar comprobante PDF": {
+      "main": [
+        [
+          {
+            "node": "Enviar correo (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
