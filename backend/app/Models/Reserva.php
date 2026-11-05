@@ -40,6 +40,13 @@ class Reserva extends Model
         return $this->belongsTo(Funcion::class);
     }
 
+    // Codigo de descuento que se uso en esta compra.
+    public function descuentoAplicado()
+    {
+        return $this->belongsTo(Descuento::class, 'descuento_id');
+    }
+
+    // Codigo de regalo que genero esta compra para la proxima.
     public function descuentoGenerado()
     {
         return $this->hasOne(Descuento::class, 'reserva_origen_id');

@@ -37,6 +37,7 @@ Route::get('/salas', [SalaController::class, 'index']);
 Route::get('/formatos', [FormatoController::class, 'index']);
 Route::get('/combos', [ComboController::class, 'index']);
 Route::get('/entradas/qr/{codigo}.png', [QrController::class, 'show']);
+Route::get('/entradas/comprobante/{codigo}.pdf', [QrController::class, 'comprobante']);
 
 // Reservas: publicas, el cliente compra sin loguearse (se identifica por correo)
 Route::post('/descuentos/validar', [DescuentoController::class, 'validar'])->middleware('throttle:20,1');
