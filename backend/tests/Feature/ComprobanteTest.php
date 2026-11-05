@@ -104,4 +104,35 @@ class ComprobanteTest extends TestCase
             && $r['descuento']['codigo'] !== $regalo->codigo
             && str_contains($r['mensaje'], 'Descuento aplicado: '.$regalo->codigo));
     }
+
+    public function test_los_comprobantes_que_n8n_no_recibio_se_reintentan(): void
+    {
+        config(['services.n8n.compra_webhook' => 'https://n8n.test/compra']);
+        Http::fakeSequence('n8n.test/*')->push('caido', 500)->push(['ok' => true]);
+
+        $funcion = $this->crearFuncion();
+        $reservaId = $this->reservar($funcion, 0);
+        $this->pagar($reservaId)->assertCreated()->assertJsonPath('reserva.comprobante_enviado_en', null);
+
+        $this->artisan('comprobantes:reenviar')
+            ->expectsOutputToContain('Se enviaron 1 de 1')
+            ->assertSuccessful();
+        $this->assertNotNull(Reserva::find($reservaId)->comprobante_enviado_en);
+
+        // Ya enviado: no se vuelve a mandar.
+        $this->artisan('comprobantes:reenviar')->expectsOutputToContain('Se enviaron 0 de 0');
+        Http::assertSentCount(2);
+    }
+
+    public function test_no_se_reintentan_comprobantes_de_funciones_que_ya_pasaron(): void
+    {
+        config(['services.n8n.compra_webhook' => 'https://n8n.test/compra']);
+        Http::fake(['n8n.test/*' => Http::response('caido', 500)]);
+
+        $funcion = $this->crearFuncion();
+        $this->pagar($this->reservar($funcion, 0))->assertCreated();
+        $funcion->update(['fecha_hora' => now()->subHour()]);
+
+        $this->artisan('comprobantes:reenviar')->expectsOutputToContain('Se enviaron 0 de 0');
+    }
 }

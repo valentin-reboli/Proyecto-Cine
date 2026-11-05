@@ -33,7 +33,8 @@ preparar_base() {
     php artisan l5-swagger:generate || echo "ERROR: no se pudo generar la documentacion de Swagger." >&2
 ) &
 
-# Libera las butacas de reservas vencidas (reservas:liberar-vencidas, cada minuto).
+# Tareas programadas: libera las butacas de reservas vencidas (cada minuto) y reintenta
+# los comprobantes que n8n no pudo recibir (cada 10 minutos). Ver routes/console.php.
 php artisan schedule:work &
 
 export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
