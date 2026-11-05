@@ -113,6 +113,11 @@ export class BookingComponent implements OnInit, OnDestroy {
   readonly error = signal('');
   readonly erroresDatos = signal<Record<string, string>>({});
   readonly codigo = signal<string | null>(null);
+  // Comprobante en PDF que genera el backend (el mismo que se adjunta en el correo).
+  readonly comprobanteUrl = computed(() => {
+    const codigo = this.codigo();
+    return codigo ? `${API_URL}/entradas/comprobante/${codigo}.pdf` : null;
+  });
   readonly reservaId = signal<number | null>(null);
   readonly qrSrc = signal<string | null>(null);
   readonly comprobanteEnviado = signal(false);

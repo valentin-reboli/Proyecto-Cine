@@ -58,9 +58,9 @@
             <p>Pago verificado y aprobado. Reserva Nº {{ reservaId() }}.</p>
             <p>
               @if (comprobanteEnviado()) {
-                Te enviamos el comprobante y el código QR por mensaje.
+                Te enviamos el comprobante en PDF y el código QR por correo.
               } @else {
-                No pudimos enviarte el comprobante por mensaje todavía; guardá este código QR.
+                Todavía no pudimos enviarte el comprobante por correo; guardá este código QR o descargá el comprobante.
               }
               Mostralo en la entrada del cine:
             </p>
@@ -68,6 +68,9 @@
               <img [src]="qrSrc()" alt="Código QR de tu entrada" class="qr-img" />
             }
             <div class="order-number">{{ codigo() }}</div>
+            @if (comprobanteUrl(); as url) {
+              <a class="btn-link" [href]="url" target="_blank" rel="noopener">Descargar comprobante (PDF)</a>
+            }
             @if (regalo(); as r) {
               <div class="regalo-box">
                 <strong>🎁 Tu regalo: {{ r.porcentaje }}% de descuento en tu próxima compra</strong>
