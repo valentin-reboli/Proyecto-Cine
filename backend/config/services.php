@@ -31,6 +31,8 @@ return [
     'n8n' => [
         // Webhook de n8n que manda el comprobante y el QR al comprador (ver CompraNotifier).
         'compra_webhook' => env('N8N_COMPRA_WEBHOOK'),
+        // Se manda en el header X-Cine-Token para que n8n rechace avisos que no vengan del backend.
+        'token' => env('N8N_WEBHOOK_TOKEN'),
     ],
 
     'slack' => [

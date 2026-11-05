@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Asiento;
+use App\Models\Combo;
 use App\Models\Formato;
 use App\Models\Funcion;
 use App\Models\Genero;
@@ -10,9 +11,10 @@ use App\Models\Pelicula;
 use App\Models\Reserva;
 use App\Models\Sala;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-// Comprobante en PDF de una compra pagada.
+// Comprobante en PDF y aviso a n8n para el correo de confirmacion.
 class ComprobanteTest extends TestCase
 {
     use RefreshDatabase;
@@ -72,5 +74,34 @@ class ComprobanteTest extends TestCase
 
         Reserva::whereKey($reservaId)->update(['estado' => 'cancelada']);
         $this->get("/api/entradas/comprobante/{$codigo}.pdf")->assertNotFound();
+    }
+
+    public function test_n8n_recibe_el_pdf_el_descuento_usado_los_importes_y_el_token(): void
+    {
+        config([
+            'services.n8n.compra_webhook' => 'https://n8n.test/compra',
+            'services.n8n.token' => 'secreto-n8n',
+        ]);
+        Http::fake(['n8n.test/*' => Http::response(['ok' => true])]);
+
+        $funcion = $this->crearFuncion();
+        $this->pagar($this->reservar($funcion, 0))->assertCreated();
+        $regalo = Reserva::first()->descuentoGenerado;
+
+        $combo = Combo::create(['nombre' => 'Pochoclo', 'precio' => 500, 'activo' => true]);
+        $reservaId = $this->reservar($funcion, 1, [
+            'codigo_descuento' => $regalo->codigo,
+            'combos' => [['combo_id' => $combo->id, 'cantidad' => 2]],
+        ]);
+        $codigo = $this->pagar($reservaId)->assertCreated()->json('reserva.codigo_qr');
+
+        Http::assertSent(fn ($r) => $r['reserva']['id'] === $reservaId
+            && $r->hasHeader('X-Cine-Token', 'secreto-n8n')
+            && str_ends_with($r['comprobante_pdf_url'], "/api/entradas/comprobante/{$codigo}.pdf")
+            && $r['descuento_aplicado']['codigo'] === $regalo->codigo
+            && $r['importes'] == ['entradas' => 1000, 'combos' => 1000, 'descuento' => 100, 'total' => 1900]
+            && $r['combos'][0]['cantidad'] === 2
+            && $r['descuento']['codigo'] !== $regalo->codigo
+            && str_contains($r['mensaje'], 'Descuento aplicado: '.$regalo->codigo));
     }
 }
