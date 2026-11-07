@@ -10,25 +10,25 @@ use Illuminate\Support\Carbon;
 // Los mismos datos se le mandan a n8n para el correo de confirmacion (ver CompraNotifier).
 class ComprobanteService
 {
+    // Las fechas que se guardan con now() estan en UTC; al comprador se le muestran en hora argentina.
+    public const ZONA = 'America/Argentina/Buenos_Aires';
+
     public function __construct(private QrService $qr) {}
 
-    public function datos(Reserva $reserva): array
+    // Datos de la compra que no dependen de que este pagada (los usan todos los avisos a n8n).
+    public function resumen(Reserva $reserva): array
     {
         $reserva->loadMissing([
             'funcion.pelicula', 'funcion.sala', 'funcion.formato', 'reservaAsientos.asiento',
-            'descuentoGenerado', 'descuentoAplicado', 'combos', 'pagos',
+            'descuentoAplicado', 'combos',
         ]);
 
         $funcion = $reserva->funcion;
         $momento = Carbon::parse($funcion->fecha_hora);
-        $butacas = $reserva->reservaAsientos->map(fn ($ra) => $ra->asiento->fila.$ra->asiento->numero)->sort()->values();
-        $pago = $reserva->pagos->firstWhere('estado', 'aprobado');
-        $regalo = $reserva->descuentoGenerado;
         $aplicado = $reserva->descuentoAplicado;
         $combosTotal = (float) $reserva->combos_total;
         $descuentoMonto = (float) $reserva->descuento_monto;
         $total = (float) $reserva->total;
-        $base = rtrim(config('app.url'), '/').'/api/entradas';
 
         return [
             'reserva' => [
@@ -48,7 +48,7 @@ class ComprobanteService
                 'formato' => $funcion->formato->nombre,
                 'idioma' => $funcion->idioma,
             ],
-            'butacas' => $butacas->all(),
+            'butacas' => $reserva->reservaAsientos->map(fn ($ra) => $ra->asiento->fila.$ra->asiento->numero)->sort()->values()->all(),
             'combos' => $reserva->combos->map(fn ($c) => [
                 'nombre' => $c->nombre,
                 'cantidad' => $c->cantidad,
@@ -66,6 +66,22 @@ class ComprobanteService
                 'porcentaje' => $aplicado->porcentaje,
                 'monto' => $descuentoMonto,
             ] : null,
+            'sitio_url' => rtrim(config('app.url'), '/'),
+        ];
+    }
+
+    // Datos completos del comprobante de una compra pagada.
+    public function datos(Reserva $reserva): array
+    {
+        $reserva->loadMissing(['descuentoGenerado', 'pagos']);
+
+        $pago = $reserva->pagos->firstWhere('estado', 'aprobado');
+        $regalo = $reserva->descuentoGenerado;
+        // APP_URL (no el host del request): detras de Caddy el host que ve Laravel es interno.
+        $base = rtrim(config('app.url'), '/').'/api/entradas';
+
+        return [
+            ...$this->resumen($reserva),
             // Codigo de regalo para la proxima compra.
             'descuento' => $regalo ? [
                 'codigo' => $regalo->codigo,
@@ -75,9 +91,8 @@ class ComprobanteService
             'pago' => [
                 'metodo' => $pago?->metodo,
                 // pagado_en se guarda en UTC; se muestra en hora argentina.
-                'fecha' => $pago?->pagado_en ? Carbon::parse($pago->pagado_en)->setTimezone('America/Argentina/Buenos_Aires')->format('d/m/Y H:i') : null,
+                'fecha' => $pago?->pagado_en ? Carbon::parse($pago->pagado_en)->setTimezone(self::ZONA)->format('d/m/Y H:i') : null,
             ],
-            // APP_URL (no el host del request): detras de Caddy el host que ve Laravel es interno.
             'qr_url' => "{$base}/qr/{$reserva->codigo_qr}.png",
             'comprobante_pdf_url' => "{$base}/comprobante/{$reserva->codigo_qr}.pdf",
         ];

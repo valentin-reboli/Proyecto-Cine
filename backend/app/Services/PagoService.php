@@ -34,7 +34,7 @@ class PagoService
         // Si se termino el tiempo pero el cron todavia no paso, se libera ahora.
         ReservaAsiento::liberarVencidas($reserva->funcion_id);
 
-        [$pago, $confirmada, $reembolsar] = DB::transaction(function () use ($reserva, $mp) {
+        [$pago, $confirmada, $reembolsar, $estadoAnterior] = DB::transaction(function () use ($reserva, $mp) {
             $reserva = Reserva::whereKey($reserva->id)->lockForUpdate()->first();
             $pago = Pago::where('mp_pago_id', $mp['id'])->first() ?? new Pago([
                 'reserva_id' => $reserva->id,
@@ -42,9 +42,11 @@ class PagoService
                 'monto' => $mp['transaction_amount'],
             ]);
 
+            $estadoAnterior = $pago->exists ? $pago->estado : null;
+
             // Un pago ya cerrado no se vuelve a procesar (el webhook puede llegar varias veces).
             if (in_array($pago->estado, ['aprobado', 'reembolsado'], true)) {
-                return [$pago, false, false];
+                return [$pago, false, false, $estadoAnterior];
             }
 
             $pago->fill([
@@ -60,7 +62,7 @@ class PagoService
                 };
                 $pago->save();
 
-                return [$pago, false, false];
+                return [$pago, false, false, $estadoAnterior];
             }
 
             $motivo = $this->motivoParaNoConfirmar($reserva, $mp);
@@ -69,7 +71,7 @@ class PagoService
                 // Se cobro pero la compra no se puede completar: se devuelve el dinero.
                 $pago->fill(['estado' => 'reembolsado', 'detalle' => $motivo, 'pagado_en' => now()])->save();
 
-                return [$pago, false, true];
+                return [$pago, false, true, $estadoAnterior];
             }
 
             ReservaAsiento::where('reserva_id', $reserva->id)->update(['estado_bloqueo' => 'ocupado']);
@@ -85,7 +87,7 @@ class PagoService
 
             $pago->fill(['estado' => 'aprobado', 'pagado_en' => now()])->save();
 
-            return [$pago, true, false];
+            return [$pago, true, false, $estadoAnterior];
         }, 3);
 
         if ($reembolsar) {
@@ -97,6 +99,9 @@ class PagoService
             $reserva = $reserva->fresh();
             $this->descuentos->generarPara($reserva);
             $this->notificador->enviar($reserva->fresh());
+        } elseif ($pago->estado !== $estadoAnterior) {
+            // Pago pendiente, rechazado o devuelto: se avisa una sola vez por cada cambio de estado.
+            $this->notificador->avisarPago($reserva->fresh(), $pago);
         }
 
         return $pago;

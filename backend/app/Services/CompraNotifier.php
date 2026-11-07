@@ -2,42 +2,89 @@
 
 namespace App\Services;
 
+use App\Models\Pago;
 use App\Models\Reserva;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-// Avisa a n8n (N8N_COMPRA_WEBHOOK) de una compra pagada para que le mande al comprador el
-// correo de confirmacion con el comprobante en PDF y el QR. Si falla, la compra igual queda
-// confirmada y el comando comprobantes:reenviar lo vuelve a intentar.
+// Avisa a n8n (N8N_COMPRA_WEBHOOK) para que le mande un correo al comprador:
+// - compra_confirmada: comprobante en PDF y QR. Si falla, la compra igual queda confirmada
+//   y el comando comprobantes:reenviar lo vuelve a intentar.
+// - pago_pendiente, pago_rechazado y compra_devuelta: la compra no se completo (todavia).
 class CompraNotifier
 {
     public function __construct(private ComprobanteService $comprobantes) {}
 
     public function enviar(Reserva $reserva): bool
     {
-        $webhook = config('services.n8n.compra_webhook');
+        $datos = $this->comprobantes->datos($reserva);
 
-        if (! $webhook) {
-            Log::warning('N8N_COMPRA_WEBHOOK no esta configurado: no se envio el comprobante de la reserva '.$reserva->id);
-
+        if (! $this->post(['evento' => 'compra_confirmada', ...$datos, 'mensaje' => $this->mensaje($datos)], $reserva)) {
             return false;
         }
 
-        $datos = $this->comprobantes->datos($reserva);
+        $reserva->update(['comprobante_enviado_en' => now()]);
+
+        return true;
+    }
+
+    // Pago que no termino en una compra confirmada: pendiente, rechazado o devuelto.
+    public function avisarPago(Reserva $reserva, Pago $pago): bool
+    {
+        $evento = match ($pago->estado) {
+            'pendiente' => 'pago_pendiente',
+            'rechazado' => 'pago_rechazado',
+            'reembolsado' => 'compra_devuelta',
+            default => null,
+        };
+
+        if (! $evento) {
+            return false;
+        }
+
+        // Hasta cuando puede volver a intentar el pago (mientras sigan bloqueadas sus butacas).
+        $expira = $reserva->estado === 'pendiente' ? $reserva->reservaAsientos()->max('expira_en') : null;
+
+        return $this->post([
+            'evento' => $evento,
+            ...$this->comprobantes->resumen($reserva),
+            'pago' => [
+                'estado' => $pago->estado,
+                'metodo' => $pago->metodo,
+                'monto' => (float) $pago->monto,
+                'detalle' => $pago->detalle,
+                'motivo' => $pago->estado === 'pendiente'
+                    ? 'Mercado Pago está revisando el pago. Te avisamos apenas se acredite.'
+                    : $pago->motivo(),
+            ],
+            'reintentar_hasta' => $evento === 'pago_rechazado' && $expira && Carbon::parse($expira)->isFuture()
+                ? Carbon::parse($expira)->setTimezone(ComprobanteService::ZONA)->format('H:i')
+                : null,
+        ], $reserva);
+    }
+
+    private function post(array $payload, Reserva $reserva): bool
+    {
+        $webhook = config('services.n8n.compra_webhook');
+
+        if (! $webhook) {
+            Log::warning("N8N_COMPRA_WEBHOOK no esta configurado: no se envio {$payload['evento']} de la reserva {$reserva->id}");
+
+            return false;
+        }
 
         try {
             // n8n valida este header con una credencial "Header Auth" (N8N_WEBHOOK_TOKEN).
             Http::timeout(8)
                 ->withHeaders(['X-Cine-Token' => (string) config('services.n8n.token')])
-                ->post($webhook, ['evento' => 'compra_confirmada', ...$datos, 'mensaje' => $this->mensaje($datos)])
+                ->post($webhook, $payload)
                 ->throw();
-
-            $reserva->update(['comprobante_enviado_en' => now()]);
 
             return true;
         } catch (Throwable $e) {
-            Log::error('No se pudo enviar el comprobante de la reserva '.$reserva->id.': '.$e->getMessage());
+            Log::error("No se pudo enviar {$payload['evento']} de la reserva {$reserva->id} a n8n: ".$e->getMessage());
 
             return false;
         }
