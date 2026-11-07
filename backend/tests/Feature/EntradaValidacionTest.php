@@ -125,4 +125,67 @@ class EntradaValidacionTest extends TestCase
         $this->postJson('/api/entradas/validar', ['codigo_qr' => $reserva->codigo_qr])->assertStatus(422);
         $this->assertNull($reserva->fresh()->usada_en);
     }
+
+    public function test_consultar_requiere_login(): void
+    {
+        $this->postJson('/api/entradas/consultar', ['codigo_qr' => 'x'])->assertUnauthorized();
+    }
+
+    public function test_consultar_muestra_los_datos_sin_marcar_la_entrada(): void
+    {
+        $reserva = $this->comprarEntrada($this->crearFuncion());
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/entradas/consultar', ['codigo_qr' => $reserva->codigo_qr])
+            ->assertOk()
+            ->assertJsonPath('estado_acceso', 'valida')
+            ->assertJsonPath('invitado_nombre', 'Ana')
+            ->assertJsonPath('funcion.pelicula.titulo', 'Pelicula Test')
+            ->assertJsonPath('funcion.sala.nombre', 'Sala Test')
+            ->assertJsonCount(1, 'reserva_asientos')
+            ->assertJsonPath('reserva_asientos.0.asiento.fila', 'A');
+
+        $this->assertNull($reserva->fresh()->usada_en);
+    }
+
+    public function test_consultar_avisa_si_ya_fue_usada(): void
+    {
+        $reserva = $this->comprarEntrada($this->crearFuncion());
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/entradas/validar', ['codigo_qr' => $reserva->codigo_qr])->assertOk();
+
+        $this->postJson('/api/entradas/consultar', ['codigo_qr' => $reserva->codigo_qr])
+            ->assertOk()
+            ->assertJsonPath('estado_acceso', 'usada');
+    }
+
+    public function test_consultar_reserva_pendiente_y_funcion_cancelada(): void
+    {
+        $funcion = $this->crearFuncion();
+        $pendiente = Reserva::create([
+            'funcion_id' => $funcion->id,
+            'invitado_nombre' => 'Ana',
+            'invitado_correo' => 'ana@test.com',
+            'total' => 1000,
+            'estado' => 'pendiente',
+            'codigo_qr' => 'codigo-pendiente',
+        ]);
+        $pagada = $this->comprarEntrada($funcion);
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/entradas/consultar', ['codigo_qr' => $pendiente->codigo_qr])
+            ->assertJsonPath('estado_acceso', 'no_pagada');
+
+        $funcion->update(['cancelada' => true]);
+        $this->postJson('/api/entradas/consultar', ['codigo_qr' => $pagada->codigo_qr])
+            ->assertJsonPath('estado_acceso', 'cancelada');
+    }
+
+    public function test_consultar_codigo_inexistente(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/entradas/consultar', ['codigo_qr' => 'no-existe'])->assertNotFound();
+    }
 }

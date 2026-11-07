@@ -379,11 +379,6 @@
   .admin-form-row {
     grid-template-columns: 1fr;
   }
-
-  .admin-table {
-    display: block;
-    overflow-x: auto;
-  }
 }
 
 /* Mapa de butacas de una sala (modal de Funciones y salas) */

@@ -1236,3 +1236,37 @@ button { font-family: var(--font-body); }
 
 /* La grilla toma la cantidad de butacas por fila de cada sala; las butacas mantienen su tamano de 28px. */
 .seat-row-seats { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 28px; }
+
+/* ===== Encabezado en celulares: logo y boton arriba, menu deslizable abajo ===== */
+@media (max-width: 760px) {
+  .site-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 12px;
+    padding-top: 12px;
+    padding-bottom: 0;
+  }
+  .site-header .logo { font-size: clamp(14px, 4.9vw, 22px); min-width: 0; }
+  .site-header > .btn { grid-column: 2; grid-row: 1; padding: 9px 14px; font-size: 13px; }
+  .site-header .main-nav {
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+    gap: 22px;
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 4px var(--gutter) 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .site-header .main-nav::-webkit-scrollbar { display: none; }
+  .site-header .main-nav a { flex-shrink: 0; white-space: nowrap; font-size: 14px; }
+  .site-header .main-nav a::after { bottom: -6px; }
+}
+@media (max-width: 380px) {
+  .site-header .logo { gap: 4px; }
+  .site-header > .btn { padding: 8px 10px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .site-header .logo { font-size: 14px; }
+}

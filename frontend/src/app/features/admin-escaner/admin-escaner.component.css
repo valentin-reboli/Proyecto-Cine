@@ -1,0 +1,83 @@
+/* Escaner de entradas: pensado para usarse desde el celular en la puerta de la sala. */
+.escaner-main { max-width: 560px; }
+.escaner { display: flex; flex-direction: column; gap: 18px; }
+
+.escaner-btn { width: 100%; padding: 15px 20px; font-size: 16px; }
+.escaner .btn-back.escaner-btn { border: 1px solid var(--border-strong); border-radius: var(--radius-lg); }
+.escaner-aviso { margin: 0; }
+.escaner-cargando { text-align: center; padding: 48px 0; }
+
+/* Pantalla inicial */
+.escaner-inicio { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.escaner-inicio p { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.escaner-icono { position: relative; width: 84px; height: 84px; }
+.escaner-icono span { position: absolute; width: 26px; height: 26px; border: 3px solid var(--accent); }
+.escaner-icono span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
+.escaner-icono span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
+.escaner-icono span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
+.escaner-icono span:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+/* Visor de la camara con un marco para apuntar */
+.escaner-visor { position: relative; overflow: hidden; aspect-ratio: 1; border-radius: var(--radius-lg); background: #000; }
+.escaner-visor video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.escaner-marco { position: absolute; inset: 16%; border: 3px solid rgba(254, 252, 190, 0.85); border-radius: 14px; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35); }
+.escaner-marco::after { content: ''; position: absolute; left: 6%; right: 6%; top: 50%; height: 2px; background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: escaner-linea 1.8s ease-in-out infinite alternate; }
+@keyframes escaner-linea { from { top: 8%; } to { top: 92%; } }
+.escaner-ayuda { position: absolute; left: 0; right: 0; bottom: 10px; margin: 0; text-align: center; font-size: 14px; color: var(--text-primary); text-shadow: 0 1px 4px #000; }
+
+/* Tarjeta con los datos de la entrada */
+.entrada { border: 1px solid var(--border-strong); border-radius: var(--radius-lg); overflow: hidden; animation: ccFadeUp 0.25s ease-out; }
+.entrada-estado { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px; text-align: center; color: #fff; }
+.entrada-estado strong { font-size: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
+.entrada-estado span { font-size: 14px; opacity: 0.9; }
+.entrada-valida .entrada-estado { background: #2f7d3e; }
+.entrada-confirmada .entrada-estado { background: #2f7d3e; }
+.entrada-usada .entrada-estado { background: #b07a12; }
+.entrada-no_pagada .entrada-estado,
+.entrada-cancelada .entrada-estado { background: var(--accent); }
+
+.entrada-cuerpo { padding: 18px; }
+.entrada-cuerpo h2 { font-size: 22px; line-height: 1.2; margin-bottom: 14px; text-align: center; }
+.entrada-cuerpo h3 { margin: 18px 0 10px; font-family: var(--font-body); font-size: 13px; letter-spacing: 1.5px; color: var(--text-secondary); }
+.entrada-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 0; }
+.entrada-datos div { min-width: 0; }
+.entrada-datos dt { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.entrada-datos dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.entrada-datos dd small { display: block; font-weight: 400; font-size: 12px; color: var(--text-secondary); }
+.entrada-butacas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.entrada-butacas li { min-width: 48px; padding: 8px 10px; border: 1px solid var(--accent); border-radius: var(--radius-md); background: var(--accent-soft-12); text-align: center; font-weight: 700; font-size: 16px; }
+.entrada-combos { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.entrada-combos span { color: var(--accent-light); font-weight: 700; }
+
+.escaner-acciones { display: flex; flex-direction: column; gap: 10px; }
+
+/* Ingreso manual del codigo */
+.escaner-manual { display: flex; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 1px solid var(--border); }
+.escaner-manual label { font-size: 13px; color: var(--text-secondary); }
+.escaner-manual-fila { display: flex; gap: 8px; }
+.escaner-manual .admin-search { flex: 1; min-width: 0; max-width: none; font-size: 16px; }
+.escaner-manual .btn-back { padding: 10px 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
+.escaner-manual .btn-back:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Historial de la sesion */
+.escaner-historial { margin-top: 20px; }
+.escaner-historial h2 { font-size: 18px; margin-bottom: 12px; }
+.escaner-historial ul { margin: 0; padding: 0; list-style: none; }
+.escaner-historial li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.escaner-historial li > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.escaner-historial small { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.historial-hora { color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.historial-punto { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.punto-valida { background: transparent; border: 2px solid #4a9a58; }
+.punto-confirmada { background: #4a9a58; }
+.punto-usada { background: #d79a22; }
+.punto-no_pagada, .punto-cancelada { background: var(--accent); }
+
+@media (max-width: 700px) {
+  .escaner-main { padding-top: 20px; }
+  .escaner-main .admin-toolbar { margin-bottom: 16px; }
+  .escaner-main .admin-section { overflow: visible; }
+}
+@media (max-width: 380px) {
+  .entrada-datos { grid-template-columns: 1fr; }
+}

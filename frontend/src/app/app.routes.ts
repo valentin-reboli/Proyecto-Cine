@@ -15,6 +15,12 @@ export const routes: Routes = [
   { path: 'admin/funciones', component: AdminFuncionesComponent, canActivate: [authGuard] },
   { path: 'admin/combos', component: AdminCombosComponent, canActivate: [authGuard] },
   {
+    // Se carga aparte para no sumar el lector de QR a la pagina publica.
+    path: 'admin/escanear',
+    loadComponent: () => import('./features/admin-escaner/admin-escaner.component').then((m) => m.AdminEscanerComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: 'admin/configuracion',
     component: AdminDashboardComponent,
     canActivate: [authGuard],

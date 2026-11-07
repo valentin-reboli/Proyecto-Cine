@@ -5,6 +5,7 @@
       <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
       <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
       <a routerLink="/admin/combos" routerLinkActive="activo">Combos</a>
+      <a routerLink="/admin/escanear" routerLinkActive="activo">Escanear QR</a>
       <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
       <a href="/" target="_blank" rel="noopener">Ver sitio ↗</a>
     </nav>
@@ -82,21 +83,21 @@
             <tbody>
               @for (p of enCarteleraFiltrada(); track p.id) {
                 <tr>
-                  <td class="col-poster">
+                  <td data-label="" class="col-poster">
                     <div class="admin-thumb" [style.background-image]="p.poster_url ? 'url(' + p.poster_url + ')' : ''">
                       @if (!p.poster_url) { <span>—</span> }
                     </div>
                   </td>
-                  <td class="col-pelicula">
+                  <td data-label="Título" class="col-pelicula">
                     <span class="admin-titulo">{{ p.titulo }}</span>
                     @if (p.trailer_url) {
                       <a [href]="p.trailer_url" target="_blank" rel="noopener" class="admin-trailer-link">▶ Trailer</a>
                     }
                   </td>
-                  <td>{{ p.genero?.nombre ?? '—' }}</td>
-                  <td class="col-corta">{{ p.duracion_min }} min</td>
-                  <td>{{ p.clasificacion || '—' }}</td>
-                  <td class="col-acciones">
+                  <td data-label="Género">{{ p.genero?.nombre ?? '—' }}</td>
+                  <td data-label="Duración" class="col-corta">{{ p.duracion_min }} min</td>
+                  <td data-label="Clasif.">{{ p.clasificacion || '—' }}</td>
+                  <td data-label="Acciones" class="col-acciones">
                     <div class="acciones-menu">
                       <button
                         type="button"
@@ -152,20 +153,20 @@
             <tbody>
               @for (p of proximamenteFiltrada(); track p.id) {
                 <tr>
-                  <td class="col-poster">
+                  <td data-label="" class="col-poster">
                     <div class="admin-thumb" [style.background-image]="p.poster_url ? 'url(' + p.poster_url + ')' : ''">
                       @if (!p.poster_url) { <span>—</span> }
                     </div>
                   </td>
-                  <td class="col-pelicula">
+                  <td data-label="Título" class="col-pelicula">
                     <span class="admin-titulo">{{ p.titulo }}</span>
                     @if (p.trailer_url) {
                       <a [href]="p.trailer_url" target="_blank" rel="noopener" class="admin-trailer-link">▶ Trailer</a>
                     }
                   </td>
-                  <td>{{ p.genero?.nombre ?? '—' }}</td>
-                  <td class="col-corta">{{ p.fecha_estreno ? (p.fecha_estreno | date: 'dd/MM/yyyy') : 'Sin fecha' }}</td>
-                  <td class="col-acciones">
+                  <td data-label="Género">{{ p.genero?.nombre ?? '—' }}</td>
+                  <td data-label="Estreno" class="col-corta">{{ p.fecha_estreno ? (p.fecha_estreno | date: 'dd/MM/yyyy') : 'Sin fecha' }}</td>
+                  <td data-label="Acciones" class="col-acciones">
                     <div class="acciones-menu">
                       <button
                         type="button"
@@ -215,9 +216,9 @@
               <tbody>
                 @for (p of inactivas(); track p.id) {
                   <tr>
-                    <td>{{ p.titulo }}</td>
-                    <td>{{ p.genero?.nombre ?? '—' }}</td>
-                    <td class="col-acciones">
+                    <td data-label="Título">{{ p.titulo }}</td>
+                    <td data-label="Género">{{ p.genero?.nombre ?? '—' }}</td>
+                    <td data-label="Acciones" class="col-acciones">
                       <button
                         type="button"
                         class="btn-link"
@@ -260,15 +261,15 @@
             <tbody>
               @for (u of usuarios(); track u.id) {
                 <tr>
-                  <td>
+                  <td data-label="Nombre">
                     {{ u.name }}
                     @if (u.id === miId()) {
                       <span class="admin-count">(vos)</span>
                     }
                   </td>
-                  <td>{{ u.email }}</td>
-                  <td>{{ u.created_at | date: 'dd/MM/yyyy' }}</td>
-                  <td class="col-acciones">
+                  <td data-label="Email">{{ u.email }}</td>
+                  <td data-label="Alta">{{ u.created_at | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Acciones" class="col-acciones">
                     <div class="acciones-menu">
                       <button
                         type="button"

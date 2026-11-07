@@ -5,6 +5,7 @@
       <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
       <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
       <a routerLink="/admin/combos" routerLinkActive="activo">Combos</a>
+      <a routerLink="/admin/escanear" routerLinkActive="activo">Escanear QR</a>
       <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
       <a href="/" target="_blank" rel="noopener">Ver sitio ↗</a>
     </nav>
@@ -49,17 +50,17 @@
             <tbody>
               @for (c of combos(); track c.id) {
                 <tr>
-                  <td class="col-poster">
+                  <td data-label="" class="col-poster">
                     <div class="admin-thumb" [style.background-image]="c.imagen_url ? 'url(' + c.imagen_url + ')' : ''">
                       @if (!c.imagen_url) { <span>—</span> }
                     </div>
                   </td>
-                  <td><span class="admin-titulo">{{ c.nombre }}</span></td>
-                  <td class="col-detalles">{{ c.descripcion || '—' }}</td>
-                  <td>{{ categoriaLabel(c.categoria) }}</td>
-                  <td>${{ c.precio }}</td>
-                  <td>{{ c.activo ? 'Activo' : 'Oculto' }}</td>
-                  <td class="col-acciones">
+                  <td data-label="Nombre"><span class="admin-titulo">{{ c.nombre }}</span></td>
+                  <td data-label="Detalles" class="col-detalles">{{ c.descripcion || '—' }}</td>
+                  <td data-label="Tipo">{{ categoriaLabel(c.categoria) }}</td>
+                  <td data-label="Precio">${{ c.precio }}</td>
+                  <td data-label="Estado">{{ c.activo ? 'Activo' : 'Oculto' }}</td>
+                  <td data-label="Acciones" class="col-acciones">
                     <div class="acciones-menu">
                       <button
                         type="button"

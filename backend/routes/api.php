@@ -74,6 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/funciones/{funcion}', [FuncionController::class, 'update']);
     Route::post('/funciones/{funcion}/cancelar', [FuncionController::class, 'cancelar']);
 
+    Route::post('/entradas/consultar', [EntradaController::class, 'consultar']);
     Route::post('/entradas/validar', [EntradaController::class, 'validar']);
     Route::get('/admin/combos', [ComboController::class, 'admin']);
     Route::post('/combos', [ComboController::class, 'store']);

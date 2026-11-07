@@ -5,6 +5,7 @@
       <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
       <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
       <a routerLink="/admin/combos" routerLinkActive="activo">Combos</a>
+      <a routerLink="/admin/escanear" routerLinkActive="activo">Escanear QR</a>
       <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
       <a href="/" target="_blank" rel="noopener">Ver sitio ↗</a>
     </nav>
@@ -74,14 +75,14 @@
               <tbody>
                 @for (f of funcionesVisibles(); track f.id) {
                   <tr>
-                    <td class="col-pelicula"><span class="admin-titulo">{{ f.pelicula?.titulo }}</span>@if (f.cancelada) { <em> · cancelada</em> }</td>
-                    <td>{{ fecha(f) }}</td>
-                    <td>{{ hora(f) }}</td>
-                    <td>{{ f.sala?.nombre }}</td>
-                    <td>{{ f.formato?.nombre }}</td>
-                    <td>{{ idiomaLabel(f.idioma) }}</td>
-                    <td class="col-num">{{ precio(f) }}</td>
-                    <td class="col-acciones">
+                    <td data-label="Película" class="col-pelicula"><span class="admin-titulo">{{ f.pelicula?.titulo }}</span>@if (f.cancelada) { <em> · cancelada</em> }</td>
+                    <td data-label="Fecha">{{ fecha(f) }}</td>
+                    <td data-label="Horario">{{ hora(f) }}</td>
+                    <td data-label="Sala">{{ f.sala?.nombre }}</td>
+                    <td data-label="Formato">{{ f.formato?.nombre }}</td>
+                    <td data-label="Idioma">{{ idiomaLabel(f.idioma) }}</td>
+                    <td data-label="Precio" class="col-num">{{ precio(f) }}</td>
+                    <td data-label="Acciones" class="col-acciones">
                       @if (!f.cancelada) {
                         <div class="acciones-menu">
                           <button
@@ -130,10 +131,10 @@
               <tbody>
                 @for (e of peliculasExpiradas(); track e.peliculaId) {
                   <tr>
-                    <td class="col-pelicula"><span class="admin-titulo">{{ e.pelicula?.titulo }}</span></td>
-                    <td>{{ fecha(e.ultima) }} · {{ hora(e.ultima) }}</td>
-                    <td>{{ e.cantidad }}</td>
-                    <td class="col-acciones">
+                    <td data-label="Película" class="col-pelicula"><span class="admin-titulo">{{ e.pelicula?.titulo }}</span></td>
+                    <td data-label="Última función">{{ fecha(e.ultima) }} · {{ hora(e.ultima) }}</td>
+                    <td data-label="Funciones dadas">{{ e.cantidad }}</td>
+                    <td data-label="Acciones" class="col-acciones">
                       <button type="button" class="btn-link btn-accion" (click)="reprogramar(e.peliculaId)">Reprogramar</button>
                     </td>
                   </tr>
@@ -169,9 +170,9 @@
             <tbody>
               @for (s of salas(); track s.id) {
                 <tr>
-                  <td class="col-pelicula"><span class="admin-titulo">{{ s.nombre }}</span></td>
-                  <td>{{ s.asientos_count }}</td>
-                  <td class="col-acciones">
+                  <td data-label="Sala" class="col-pelicula"><span class="admin-titulo">{{ s.nombre }}</span></td>
+                  <td data-label="Butacas">{{ s.asientos_count }}</td>
+                  <td data-label="Acciones" class="col-acciones">
 <div class="acciones-menu">
                       <button
                         type="button"
@@ -213,8 +214,8 @@
             <tbody>
               @for (f of formatos(); track f.id) {
                 <tr>
-                  <td class="col-pelicula"><span class="admin-titulo">{{ f.nombre }}</span></td>
-                  <td class="col-acciones">
+                  <td data-label="Formato" class="col-pelicula"><span class="admin-titulo">{{ f.nombre }}</span></td>
+                  <td data-label="Acciones" class="col-acciones">
                     <div class="acciones-menu">
                       <button
                         type="button"

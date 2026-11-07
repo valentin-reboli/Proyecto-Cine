@@ -18,7 +18,8 @@
           "options": {
             "outputPath": "dist/cine-concordia",
             "allowedCommonJsDependencies": [
-              "qrcode-generator"
+              "qrcode-generator",
+              "jsqr"
             ],
             "index": "src/index.html",
             "browser": "src/main.ts",

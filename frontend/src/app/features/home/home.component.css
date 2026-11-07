@@ -67,3 +67,7 @@
 .detalle-chip { align-items: center; text-align: center; }
 
 .site-footer { justify-content: center; text-align: center; }
+/* Titulos de seccion: que entren en pantallas angostas */
+@media (max-width: 600px) {
+  .section h2 { font-size: clamp(26px, 8.5vw, 36px); overflow-wrap: anywhere; }
+}

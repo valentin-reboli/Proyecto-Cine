@@ -8,6 +8,68 @@ use OpenApi\Attributes as OA;
 
 class EntradaController extends Controller
 {
+    // Datos que se muestran del QR en el panel (pelicula, sala, butacas y combos).
+    private const RELACIONES = ['funcion.pelicula', 'funcion.sala', 'funcion.formato', 'reservaAsientos.asiento', 'combos'];
+
+    // Primer paso del escaner del admin: muestra los datos de la/s entrada/s
+    // sin marcarlas, para que el personal las revise antes de confirmar.
+    #[OA\Post(
+        path: '/api/entradas/consultar',
+        summary: 'Consultar una entrada por su QR (sin marcarla)',
+        description: 'Busca la reserva por su codigo QR y devuelve sus datos junto con estado_acceso: valida, usada, no_pagada o cancelada.',
+        tags: ['Entradas'],
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['codigo_qr'],
+                properties: [
+                    new OA\Property(property: 'codigo_qr', type: 'string', example: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Datos de la reserva y si se puede usar.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 404, description: 'No existe una entrada con ese codigo.'),
+        ]
+    )]
+    public function consultar(Request $request)
+    {
+        $data = $request->validate([
+            'codigo_qr' => ['required', 'string', 'max:255'],
+        ]);
+
+        $reserva = Reserva::where('codigo_qr', $data['codigo_qr'])
+            ->with(self::RELACIONES)
+            ->first();
+
+        if (! $reserva) {
+            return response()->json(['message' => 'No existe una entrada con ese codigo.'], 404);
+        }
+
+        return array_merge($reserva->toArray(), [
+            'estado_acceso' => $this->estadoAcceso($reserva),
+            // Las butacas liberadas (bloqueos vencidos) no forman parte de la entrada.
+            'reserva_asientos' => $reserva->reservaAsientos
+                ->where('estado_bloqueo', '!=', 'liberado')
+                ->values()
+                ->toArray(),
+        ]);
+    }
+
+    private function estadoAcceso(Reserva $reserva): string
+    {
+        if ($reserva->estado !== 'pagada') {
+            return 'no_pagada';
+        }
+        if ($reserva->funcion->cancelada) {
+            return 'cancelada';
+        }
+
+        return $reserva->usada_en ? 'usada' : 'valida';
+    }
+
     // Control de acceso en la puerta: el personal escanea el QR de la
     // entrada y, si es valida, queda marcada como usada.
     #[OA\Post(
@@ -70,6 +132,6 @@ class EntradaController extends Controller
             ], 409);
         }
 
-        return $reserva->fresh()->load(['funcion.pelicula', 'funcion.sala', 'reservaAsientos.asiento']);
+        return $reserva->fresh()->load(self::RELACIONES);
     }
 }

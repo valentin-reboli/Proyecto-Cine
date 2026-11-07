@@ -85,3 +85,47 @@
 .horario-quitar:hover { border-color: var(--accent); color: var(--accent); }
 .horario-agregar { margin-top: 4px; background: transparent; border: 1px dashed var(--border-strong); border-radius: 999px; color: var(--accent-light); padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .horario-agregar:hover { border-color: var(--accent); }
+
+/* ===== Celular: cada fila de las tablas se muestra como una tarjeta =====
+   El nombre de cada dato sale del atributo data-label de la celda. */
+@media (max-width: 640px) {
+  .admin-section { overflow: visible; }
+  .admin-table, .admin-section .admin-table { display: block; background: transparent; }
+  .admin-table thead { display: none; }
+  .admin-table tbody { display: flex; flex-direction: column; gap: 12px; }
+  .admin-table tbody tr { position: relative; display: flex; flex-direction: column; padding: 14px 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface-alt); }
+  .admin-table tbody tr:hover { background: var(--surface-alt); }
+  .admin-table td,
+  .tabla-centrada td,
+  .tabla-funciones td { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 5px 0; border: none; text-align: right; white-space: normal; min-width: 0; max-width: none; }
+  .admin-table td::before { content: attr(data-label); flex-shrink: 0; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; text-align: left; }
+  .admin-table td[data-label='']::before { content: none; }
+  /* Primer dato (titulo, nombre, sala...): encabezado de la tarjeta */
+  .admin-table td:first-child:not(.col-poster),
+  .admin-table td.col-poster + td { display: block; padding: 0 48px 8px 0; margin-bottom: 4px; border-bottom: 1px solid var(--border); text-align: left; font-size: 16px; }
+  .admin-table td:first-child:not(.col-poster)::before,
+  .admin-table td.col-poster + td::before { content: none; }
+  .admin-table .col-poster { display: none; }
+  .admin-table .admin-trailer-link { display: inline-block; margin-top: 4px; }
+  /* Menu de acciones (⋯) arriba a la derecha de la tarjeta */
+  .admin-table td.col-acciones { position: absolute; top: 8px; right: 8px; width: auto; padding: 0; }
+  .admin-table td.col-acciones::before { content: none; }
+  .admin-table td.col-acciones button:not(.acciones-toggle) { margin: 0 0 0 6px; }
+  .acciones-lista { min-width: 220px; max-width: calc(100vw - 48px); }
+}
+@media (max-width: 640px) {
+  /* Filas con un boton de texto (Restaurar, Reprogramar): el boton va abajo, a lo ancho */
+  .admin-table td.col-acciones:not(:has(.acciones-menu)) { position: static; justify-content: flex-end; padding-top: 10px; }
+}
+@media (max-width: 640px) {
+  /* Datos de la tarjeta en dos columnas (nombre arriba, valor abajo) para que sea mas corta */
+  .admin-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .admin-table td,
+  .tabla-centrada td,
+  .tabla-funciones td { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+  .admin-table td:first-child:not(.col-poster),
+  .admin-table td.col-poster + td,
+  .admin-table td.col-acciones:not(:has(.acciones-menu)),
+  .admin-table td.col-detalles { grid-column: 1 / -1; }
+  .admin-table td.col-acciones:not(:has(.acciones-menu)) { align-items: flex-end; }
+}

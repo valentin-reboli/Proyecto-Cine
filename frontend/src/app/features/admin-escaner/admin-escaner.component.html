@@ -1,0 +1,150 @@
+<div class="admin-page">
+  <header class="site-header">
+    <div class="logo">CINE<span class="accent">CONCORDIA</span></div>
+    <nav class="main-nav">
+      <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
+      <a routerLink="/admin/funciones" routerLinkActive="activo">Funciones</a>
+      <a routerLink="/admin/combos" routerLinkActive="activo">Combos</a>
+      <a routerLink="/admin/escanear" routerLinkActive="activo">Escanear QR</a>
+      <a routerLink="/admin/configuracion" routerLinkActive="activo">Configuración</a>
+      <a href="/" target="_blank" rel="noopener">Ver sitio ↗</a>
+    </nav>
+    <button type="button" class="btn btn-back" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="admin-main escaner-main">
+    <div class="admin-toolbar">
+      <p class="eyebrow">Panel de administrador</p>
+      <h1>Escanear entradas</h1>
+    </div>
+
+    <section class="admin-section escaner">
+      @switch (paso()) {
+        @case ('inicio') {
+          <div class="escaner-inicio">
+            <div class="escaner-icono" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <p>Apuntá la cámara al QR que el cliente recibió por correo o en el comprobante PDF.</p>
+            <button type="button" class="btn btn-primary escaner-btn" (click)="abrirCamara()">Abrir cámara</button>
+            @if (errorCamara()) {
+              <p class="admin-error escaner-aviso">{{ errorCamara() }}</p>
+            }
+          </div>
+        }
+
+        @case ('camara') {
+          <div class="escaner-visor">
+            <video #video muted playsinline autoplay></video>
+            <div class="escaner-marco" aria-hidden="true"></div>
+            <p class="escaner-ayuda">Buscando un código QR…</p>
+          </div>
+          <button type="button" class="btn btn-back escaner-btn" (click)="cerrarCamara()">Cancelar</button>
+        }
+
+        @case ('buscando') {
+          <p class="admin-loading escaner-cargando">Buscando la entrada…</p>
+        }
+
+        @case ('resultado') {
+          @if (entrada(); as e) {
+            <div class="entrada" [class]="'entrada entrada-' + (confirmada() ? 'confirmada' : estado())">
+              <div class="entrada-estado">
+                @if (confirmada()) {
+                  <strong>✓ Asistencia confirmada</strong>
+                  <span>{{ e.usada_en | date: 'HH:mm' }} h</span>
+                } @else {
+                  <strong>{{ textoEstado[estado()] }}</strong>
+                  @if (estado() === 'usada' && e.usada_en) {
+                    <span>Ingresó el {{ e.usada_en | date: 'dd/MM HH:mm' }} h</span>
+                  }
+                }
+              </div>
+
+              <div class="entrada-cuerpo">
+                <h2>{{ e.funcion.pelicula?.titulo }}</h2>
+                <dl class="entrada-datos">
+                  <div><dt>Función</dt><dd>{{ e.funcion.fecha_hora | date: 'dd/MM/yyyy · HH:mm' }} h</dd></div>
+                  <div><dt>Sala</dt><dd>{{ e.funcion.sala?.nombre ?? '—' }}</dd></div>
+                  <div>
+                    <dt>Formato</dt>
+                    <dd>{{ e.funcion.formato?.nombre ?? '—' }} · {{ e.funcion.idioma === 'SUB' ? 'Subtitulada' : 'Doblada' }}</dd>
+                  </div>
+                  <div><dt>Cliente</dt><dd>{{ e.invitado_nombre }}<small>{{ e.invitado_correo }}</small></dd></div>
+                </dl>
+
+                <h3>{{ butacas().length }} {{ butacas().length === 1 ? 'entrada' : 'entradas' }}</h3>
+                <ul class="entrada-butacas">
+                  @for (b of butacas(); track b.id) {
+                    <li>{{ b.fila }}{{ b.numero }}</li>
+                  }
+                </ul>
+
+                @if (e.combos.length) {
+                  <h3>Combos</h3>
+                  <ul class="entrada-combos">
+                    @for (c of e.combos; track c.id) {
+                      <li><span>{{ c.cantidad }}×</span> {{ c.nombre }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          }
+
+          @if (error()) {
+            <p class="admin-error escaner-aviso">{{ error() }}</p>
+          }
+
+          <div class="escaner-acciones">
+            @if (entrada() && estado() === 'valida' && !confirmada()) {
+              <button type="button" class="btn btn-primary escaner-btn" [disabled]="confirmando()" (click)="confirmarAsistencia()">
+                {{ confirmando() ? 'Confirmando…' : 'Confirmar asistencia' }}
+              </button>
+              <button type="button" class="btn btn-back escaner-btn" (click)="volverAlInicio()">Cancelar</button>
+            } @else {
+              <button type="button" class="btn btn-primary escaner-btn" (click)="escanearOtra()">Escanear otra</button>
+            }
+          </div>
+        }
+      }
+
+      @if (paso() === 'inicio' || paso() === 'resultado') {
+        <form class="escaner-manual" (ngSubmit)="buscarManual()">
+          <label for="codigo-manual">¿No lee el QR? Ingresá el código del comprobante</label>
+          <div class="escaner-manual-fila">
+            <input
+              id="codigo-manual"
+              name="codigo"
+              class="admin-search"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="Ej: 9b1deb4d-3b7d-4bad-…"
+              [(ngModel)]="codigoManual"
+            />
+            <button type="submit" class="btn btn-back" [disabled]="!codigoManual.trim()">Buscar</button>
+          </div>
+        </form>
+      }
+    </section>
+
+    @if (historial().length) {
+      <section class="admin-section escaner-historial">
+        <h2>Últimos escaneos</h2>
+        <ul>
+          @for (h of historial(); track h.codigo) {
+            <li>
+              <span class="historial-punto" [class]="'historial-punto punto-' + h.estado"></span>
+              <div>
+                <strong>{{ h.cliente }}</strong>
+                <small>{{ h.pelicula }} · {{ h.butacas }} {{ h.butacas === 1 ? 'butaca' : 'butacas' }}</small>
+              </div>
+              <span class="historial-hora">{{ h.hora | date: 'HH:mm' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </main>
+</div>
