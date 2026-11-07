@@ -1,8 +1,11 @@
-# n8n: correo de compra confirmada
+# n8n: avisos de compra por correo
 
 Cuando Mercado Pago confirma un pago (webhook o vuelta de Checkout Pro), el backend genera el código de
 descuento de regalo y le avisa a n8n (`CompraNotifier`). n8n descarga el comprobante en PDF y le manda al
 comprador un correo con los datos de la entrada, el QR, el código de regalo y el PDF adjunto.
+
+Si el pago no se confirma, el backend también avisa (una sola vez por cada cambio de estado del pago) y n8n
+manda el correo que corresponde: pago en revisión, pago rechazado o dinero devuelto.
 
 ```
 Mercado Pago ──webhook──▶ Laravel (PagoService) ──POST + X-Cine-Token──▶ n8n ──Gmail──▶ comprador
@@ -48,11 +51,11 @@ para el proyecto.
 
 1. Generar un token largo al azar, por ejemplo con `openssl rand -hex 32`.
 2. En n8n: **Credentials → New → Header Auth**. Name: `X-Cine-Token`, Value: el token.
-3. **Workflows → Import from file** → [`compra-confirmada.json`](compra-confirmada.json).
+3. **Workflows → Import from file** → [`avisos-de-compra.json`](avisos-de-compra.json).
 4. Abrir cada nodo y elegir su credencial:
    - **Webhook**: la credencial *Header Auth* del paso 2.
-   - **Enviar correo (Gmail)**: la credencial *Gmail OAuth2 API*.
-5. Guardar y activar el workflow (switch **Active**).
+   - Todos los nodos **Correo: ...** y **Alerta al equipo**: la credencial *Gmail OAuth2 API*.
+5. Guardar y publicar el workflow (botón **Publish**).
 
 ## 4. Variables del backend en Railway
 
@@ -81,8 +84,24 @@ curl -X POST https://cine-n8n.up.railway.app/webhook-test/compra-confirmada \
 
 Para que el PDF del ejemplo exista, `comprobante_pdf_url` tiene que ser de una compra pagada real.
 
+## Ramas del workflow
+
+| Rama | Cuándo | Qué hace |
+| --- | --- | --- |
+| Webhook | Siempre | Rechaza (403) el aviso si no trae el `X-Cine-Token` correcto. |
+| ¿Tiene correo? | Siempre | Sin `comprador.correo` no manda nada y termina en *Sin correo: no se envía*. |
+| `compra_confirmada` | Pago aprobado | Descarga el PDF (3 intentos) y lo adjunta. Si no se puede descargar, manda el correo con el link al PDF. |
+| `pago_pendiente` | Mercado Pago está revisando el pago | Avisa que la reserva sigue guardada y que llega otro correo cuando se acredite. |
+| `pago_rechazado` | Tarjeta rechazada | Explica el motivo y hasta qué hora puede reintentar (`reintentar_hasta`) o que las butacas se liberaron. |
+| `compra_devuelta` | Pago aprobado tarde o duplicado | Avisa que se devolvió el dinero y por qué. |
+| Evento desconocido | Cualquier otro `evento` | No manda nada (queda registrado en *Executions*). |
+| Alerta al equipo | Falla cualquier envío de Gmail | Le manda a la cuenta del equipo el evento, la reserva, el comprador y el error. |
+
 ## Datos que manda el backend
 
-Ver [`ejemplo-payload.json`](ejemplo-payload.json). `descuento_aplicado` es el código que usó el comprador en
+Ver [`ejemplo-payload.json`](ejemplo-payload.json) (compra confirmada) y
+[`ejemplo-pago-rechazado.json`](ejemplo-pago-rechazado.json). Los avisos `pago_pendiente`, `pago_rechazado`
+y `compra_devuelta` traen los mismos datos de la reserva más `pago` (`estado`, `metodo`, `monto`, `detalle`,
+`motivo`) y `reintentar_hasta` (hora límite para reintentar, o `null`). `descuento_aplicado` es el código que usó el comprador en
 esta compra (o `null`); `descuento` es el código de regalo para la próxima. `mensaje` es un resumen en texto
 plano por si se quiere mandar también por Telegram.

@@ -1,5 +1,5 @@
 {
-  "name": "Cine Concordia - Correo de compra confirmada",
+  "name": "Cine Concordia - Avisos de compra",
   "nodes": [
     {
       "parameters": {
@@ -14,7 +14,7 @@
       "typeVersion": 2,
       "position": [
         0,
-        0
+        300
       ],
       "webhookId": "compra-confirmada"
     },
@@ -24,16 +24,18 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "loose",
+            "version": 2
           },
           "conditions": [
             {
-              "id": "evento",
-              "leftValue": "={{ $json.body.evento }}",
-              "rightValue": "compra_confirmada",
+              "id": "correo",
+              "leftValue": "={{ $json.body.comprador?.correo }}",
+              "rightValue": "",
               "operator": {
                 "type": "string",
-                "operation": "equals"
+                "operation": "notEmpty",
+                "singleValue": true
               }
             }
           ],
@@ -41,40 +43,170 @@
         },
         "options": {}
       },
-      "name": "Es compra confirmada",
+      "name": "¿Tiene correo?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
+      "typeVersion": 2.2,
       "position": [
         220,
-        0
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Sin correo: no se envía",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        440,
+        520
       ]
     },
     {
       "parameters": {
-        "url": "={{ $json.body.comprobante_pdf_url }}",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dy.evento}}",
+                    "leftValue": "={{ $json.body.evento }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "compra_confirmada"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "compra_confirmada"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dy.evento}}",
+                    "leftValue": "={{ $json.body.evento }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "pago_pendiente"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pago_pendiente"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dy.evento}}",
+                    "leftValue": "={{ $json.body.evento }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "pago_rechazado"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pago_rechazado"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dy.evento}}",
+                    "leftValue": "={{ $json.body.evento }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "compra_devuelta"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "compra_devuelta"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "otro_evento"
+        }
+      },
+      "name": "Según el evento",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Webhook').item.json.body.comprobante_pdf_url }}",
         "options": {
           "response": {
             "response": {
               "responseFormat": "file",
               "outputPropertyName": "comprobante"
             }
-          }
+          },
+          "timeout": 20000
         }
       },
       "name": "Descargar comprobante PDF",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        -20
-      ]
+        700,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "sendTo": "={{ $('Webhook').item.json.body.comprador.correo }}",
         "emailType": "html",
         "subject": "=Tu entrada para {{ $('Webhook').item.json.body.pelicula }} - Reserva Nº {{ $('Webhook').item.json.body.reserva.id }}",
-        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\">\n<h2 style=\"color:#b91c1c;margin-bottom:4px\">¡Tu compra está confirmada!</h2>\n<p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, gracias por comprar en Cine Concordia.</p>\n<table style=\"width:100%;border-collapse:collapse\">\n<tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha }} · {{ $('Webhook').item.json.body.funcion.hora }} hs</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala }} · {{ $('Webhook').item.json.body.funcion.formato }}</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>\n{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}\n{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}\n<tr><td style=\"color:#6b7280;padding:4px 0\">Total pagado</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr>\n<tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr>\n</table>\n<p style=\"text-align:center;margin:20px 0\"><img src=\"{{ $('Webhook').item.json.body.qr_url }}\" width=\"200\" height=\"200\" alt=\"Código QR de tu entrada\"><br>Presentá este código QR en la entrada de la sala.</p>\n{{ $('Webhook').item.json.body.descuento ? '<div style=\"border:1px dashed #b91c1c;padding:12px;margin:16px 0\">🎁 <b>Tu regalo:</b> ' + $('Webhook').item.json.body.descuento.porcentaje + '% de descuento en tu próxima compra con el código <b style=\"font-size:16px\">' + $('Webhook').item.json.body.descuento.codigo + '</b>. Válido hasta el ' + $('Webhook').item.json.body.descuento.vence + '.</div>' : '' }}\n<p>Te adjuntamos el comprobante en PDF.</p>\n<p style=\"color:#6b7280;font-size:12px\">Pago de prueba con Mercado Pago: no se cobró dinero real.</p>\n</div>",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\"><h2 style=\"color:#b91c1c;margin-bottom:4px\">¡Tu compra está confirmada!</h2><p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, gracias por comprar en Cine Concordia.</p><table style=\"width:100%;border-collapse:collapse\"><tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha + ' · ' + $('Webhook').item.json.body.funcion.hora + ' hs' }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala + ' · ' + $('Webhook').item.json.body.funcion.formato }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}<tr><td style=\"color:#6b7280;padding:4px 0\">Total pagado</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr></table><p style=\"text-align:center;margin:20px 0\"><img src=\"{{ $('Webhook').item.json.body.qr_url }}\" width=\"200\" height=\"200\" alt=\"Código QR de tu entrada\"><br>Presentá este código QR en la entrada de la sala.</p>{{ $('Webhook').item.json.body.descuento ? '<div style=\"border:1px dashed #b91c1c;padding:12px;margin:16px 0\">🎁 <b>Tu regalo:</b> ' + $('Webhook').item.json.body.descuento.porcentaje + '% de descuento en tu próxima compra con el código <b style=\"font-size:16px\">' + $('Webhook').item.json.body.descuento.codigo + '</b>. Válido hasta el ' + $('Webhook').item.json.body.descuento.vence + '.</div>' : '' }}<p>Te adjuntamos el comprobante en PDF.</p><p style=\"color:#6b7280;font-size:12px\">Cine Concordia · Pagos de prueba con Mercado Pago: no se cobra dinero real.</p></div>",
         "options": {
           "appendAttribution": false,
           "senderName": "Cine Concordia",
@@ -87,12 +219,122 @@
           }
         }
       },
-      "name": "Enviar correo (Gmail)",
+      "name": "Correo: compra confirmada",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        660,
-        -20
+        960,
+        -80
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.comprador.correo }}",
+        "emailType": "html",
+        "subject": "=Tu entrada para {{ $('Webhook').item.json.body.pelicula }} - Reserva Nº {{ $('Webhook').item.json.body.reserva.id }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\"><h2 style=\"color:#b91c1c;margin-bottom:4px\">¡Tu compra está confirmada!</h2><p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, gracias por comprar en Cine Concordia.</p><table style=\"width:100%;border-collapse:collapse\"><tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha + ' · ' + $('Webhook').item.json.body.funcion.hora + ' hs' }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala + ' · ' + $('Webhook').item.json.body.funcion.formato }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}<tr><td style=\"color:#6b7280;padding:4px 0\">Total pagado</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr></table><p style=\"text-align:center;margin:20px 0\"><img src=\"{{ $('Webhook').item.json.body.qr_url }}\" width=\"200\" height=\"200\" alt=\"Código QR de tu entrada\"><br>Presentá este código QR en la entrada de la sala.</p>{{ $('Webhook').item.json.body.descuento ? '<div style=\"border:1px dashed #b91c1c;padding:12px;margin:16px 0\">🎁 <b>Tu regalo:</b> ' + $('Webhook').item.json.body.descuento.porcentaje + '% de descuento en tu próxima compra con el código <b style=\"font-size:16px\">' + $('Webhook').item.json.body.descuento.codigo + '</b>. Válido hasta el ' + $('Webhook').item.json.body.descuento.vence + '.</div>' : '' }}<p>Podés descargar el comprobante en PDF desde <a href=\"{{ $('Webhook').item.json.body.comprobante_pdf_url }}\">este link</a>.</p><p style=\"color:#6b7280;font-size:12px\">Cine Concordia · Pagos de prueba con Mercado Pago: no se cobra dinero real.</p></div>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Cine Concordia"
+        }
+      },
+      "name": "Correo: confirmada sin PDF",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        120
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.comprador.correo }}",
+        "emailType": "html",
+        "subject": "=Estamos esperando tu pago - Reserva Nº {{ $('Webhook').item.json.body.reserva.id }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\"><h2 style=\"color:#b45309;margin-bottom:4px\">Estamos esperando tu pago</h2><p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, recibimos tu pedido pero Mercado Pago todavía no acreditó el pago.</p><p style=\"background:#f3f4f6;padding:10px 12px;border-radius:6px\">{{ $('Webhook').item.json.body.pago.motivo }}</p><table style=\"width:100%;border-collapse:collapse\"><tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha + ' · ' + $('Webhook').item.json.body.funcion.hora + ' hs' }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala + ' · ' + $('Webhook').item.json.body.funcion.formato }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}<tr><td style=\"color:#6b7280;padding:4px 0\">Total</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr></table><p>No hace falta que pagues de nuevo. Apenas se acredite te mandamos otro correo con tus entradas y el código QR.</p><p style=\"color:#6b7280;font-size:12px\">Cine Concordia · Pagos de prueba con Mercado Pago: no se cobra dinero real.</p></div>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Cine Concordia"
+        }
+      },
+      "name": "Correo: pago en revisión",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        700,
+        240
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.comprador.correo }}",
+        "emailType": "html",
+        "subject": "=Tu pago no se pudo completar - Reserva Nº {{ $('Webhook').item.json.body.reserva.id }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\"><h2 style=\"color:#b91c1c;margin-bottom:4px\">Tu pago no se pudo completar</h2><p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, Mercado Pago rechazó el pago de tu compra.</p><p style=\"background:#f3f4f6;padding:10px 12px;border-radius:6px\">{{ $('Webhook').item.json.body.pago.motivo }}</p><table style=\"width:100%;border-collapse:collapse\"><tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha + ' · ' + $('Webhook').item.json.body.funcion.hora + ' hs' }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala + ' · ' + $('Webhook').item.json.body.funcion.formato }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}<tr><td style=\"color:#6b7280;padding:4px 0\">Total</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr></table>{{ $('Webhook').item.json.body.reintentar_hasta ? '<p>Tus butacas siguen reservadas hasta las <b>' + $('Webhook').item.json.body.reintentar_hasta + ' hs</b>. Podés volver a intentar el pago en <a href=\"' + $('Webhook').item.json.body.sitio_url + '\">' + $('Webhook').item.json.body.sitio_url + '</a>.</p>' : '<p>Tus butacas ya se liberaron. Podés hacer una reserva nueva en <a href=\"' + $('Webhook').item.json.body.sitio_url + '\">' + $('Webhook').item.json.body.sitio_url + '</a>.</p>' }}<p style=\"color:#6b7280;font-size:12px\">Cine Concordia · Pagos de prueba con Mercado Pago: no se cobra dinero real.</p></div>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Cine Concordia"
+        }
+      },
+      "name": "Correo: pago rechazado",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        700,
+        400
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.comprador.correo }}",
+        "emailType": "html",
+        "subject": "=No pudimos completar tu compra - Reserva Nº {{ $('Webhook').item.json.body.reserva.id }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937\"><h2 style=\"color:#b91c1c;margin-bottom:4px\">No pudimos completar tu compra</h2><p>Hola {{ $('Webhook').item.json.body.comprador.nombre }}, hubo un problema con tu compra.</p><p style=\"background:#f3f4f6;padding:10px 12px;border-radius:6px\">{{ $('Webhook').item.json.body.pago.motivo }}</p><table style=\"width:100%;border-collapse:collapse\"><tr><td style=\"color:#6b7280;padding:4px 0\">Película</td><td><b>{{ $('Webhook').item.json.body.pelicula }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Función</td><td><b>{{ $('Webhook').item.json.body.funcion.fecha + ' · ' + $('Webhook').item.json.body.funcion.hora + ' hs' }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Sala</td><td><b>{{ $('Webhook').item.json.body.funcion.sala + ' · ' + $('Webhook').item.json.body.funcion.formato }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Butacas</td><td><b>{{ $('Webhook').item.json.body.butacas.join(', ') }}</b></td></tr>{{ $('Webhook').item.json.body.combos.length ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Combos</td><td><b>' + $('Webhook').item.json.body.combos.map(c => c.cantidad + 'x ' + c.nombre).join(', ') + '</b></td></tr>' : '' }}{{ $('Webhook').item.json.body.descuento_aplicado ? '<tr><td style=\"color:#6b7280;padding:4px 0\">Descuento</td><td><b>' + $('Webhook').item.json.body.descuento_aplicado.codigo + ' (-$' + Math.round($('Webhook').item.json.body.descuento_aplicado.monto).toLocaleString('es-AR') + ')</b></td></tr>' : '' }}<tr><td style=\"color:#6b7280;padding:4px 0\">Monto devuelto</td><td><b>${{ Math.round($('Webhook').item.json.body.importes.total).toLocaleString('es-AR') }}</b></td></tr><tr><td style=\"color:#6b7280;padding:4px 0\">Reserva Nº</td><td><b>{{ $('Webhook').item.json.body.reserva.id }}</b></td></tr></table><p>No tenés que hacer nada: Mercado Pago te reintegra el pago. Si querés, podés hacer una reserva nueva en <a href=\"{{ $('Webhook').item.json.body.sitio_url }}\">{{ $('Webhook').item.json.body.sitio_url }}</a>.</p><p style=\"color:#6b7280;font-size:12px\">Cine Concordia · Pagos de prueba con Mercado Pago: no se cobra dinero real.</p></div>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Cine Concordia"
+        }
+      },
+      "name": "Correo: dinero devuelto",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        700,
+        560
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "name": "Evento desconocido",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        700,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "cineconcordiautn@gmail.com",
+        "emailType": "html",
+        "subject": "=[n8n] No se pudo enviar el correo de {{ $('Webhook').item.json.body.evento }} (reserva {{ $('Webhook').item.json.body.reserva.id }})",
+        "message": "=<p>Falló el envío del correo al comprador.</p><ul><li>Evento: <b>{{ $('Webhook').item.json.body.evento }}</b></li><li>Reserva: <b>{{ $('Webhook').item.json.body.reserva.id }}</b></li><li>Comprador: {{ $('Webhook').item.json.body.comprador.nombre }} &lt;{{ $('Webhook').item.json.body.comprador.correo }}&gt;</li><li>Error: {{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : 'sin detalle' }}</li></ul><p>Revisar la ejecución en n8n.</p>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Cine Concordia"
+        }
+      },
+      "name": "Alerta al equipo",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1240,
+        300
       ]
     }
   ],
@@ -101,14 +343,32 @@
       "main": [
         [
           {
-            "node": "Es compra confirmada",
+            "node": "¿Tiene correo?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Es compra confirmada": {
+    "¿Tiene correo?": {
+      "main": [
+        [
+          {
+            "node": "Según el evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sin correo: no se envía",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Según el evento": {
       "main": [
         [
           {
@@ -117,14 +377,108 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Correo: pago en revisión",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Correo: pago rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Correo: dinero devuelto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Evento desconocido",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Descargar comprobante PDF": {
       "main": [
         [
           {
-            "node": "Enviar correo (Gmail)",
+            "node": "Correo: compra confirmada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Correo: confirmada sin PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correo: compra confirmada": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Alerta al equipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correo: confirmada sin PDF": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Alerta al equipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correo: pago en revisión": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Alerta al equipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correo: pago rechazado": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Alerta al equipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correo: dinero devuelto": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Alerta al equipo",
             "type": "main",
             "index": 0
           }

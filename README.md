@@ -99,7 +99,7 @@ Variables del servicio web (cargarlas en Railway → Variables; nunca commitear 
 | `GOOGLE_CLIENT_ID` | Client ID de Google (debe ser el mismo que usa el front en `environment.production.ts`). |
 | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `MP_MODO_PRUEBA` | Credenciales de Mercado Pago (Checkout Pro) y modo prueba (`true`/`false`). |
 | `MP_MONTO_COBRO` | Opcional. Monto fijo en pesos que se le cobra a Mercado Pago por compra (por ejemplo `0.10`), sin cambiar el precio que ve el cliente. Solo para probar cobros reales; **dejar vacío para cobrar el total**. |
-| `N8N_COMPRA_WEBHOOK` | Webhook de n8n que manda el correo de confirmación con el comprobante en PDF, el QR y el código de descuento al comprador. |
+| `N8N_COMPRA_WEBHOOK` | Webhook de n8n que manda los correos al comprador: confirmación con el comprobante en PDF, el QR y el código de descuento, o aviso de pago pendiente, rechazado o devuelto. |
 | `N8N_WEBHOOK_TOKEN` | Token que el backend manda en el header `X-Cine-Token` y n8n valida (credencial *Header Auth*). |
 | `DESCUENTO_PORCENTAJE`, `DESCUENTO_VIGENCIA_DIAS` | Descuento que se regala en cada compra (por defecto 10 % y 30 días). Opcionales. |
 | `PORT` | Opcional; Railway lo define solo. |
